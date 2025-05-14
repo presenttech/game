@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Domino Master</title>
+    <title>لعبة البقاء على قيد الحياة</title>
     <style>
         /* CSS Reset */
         * {
@@ -16,242 +16,271 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #1a1a2e;
+            background-color: #121212;
             color: #fff;
             overflow: hidden;
             touch-action: manipulation;
             height: 100vh;
             display: flex;
             flex-direction: column;
+            direction: rtl;
         }
 
-        /* Game Container */
-        #game-container {
+        /* الشاشة الرئيسية */
+        #app-container {
             display: flex;
             flex-direction: column;
             height: 100vh;
             position: relative;
-            overflow: hidden;
         }
 
-        /* Header */
+        /* شاشة الدخول */
+        #login-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #1a2a3a 0%, #0f1923 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            padding: 20px;
+            transition: opacity 0.5s ease;
+        }
+
+        #login-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .game-title {
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+            background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-align: center;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .input-group {
+            width: 100%;
+            max-width: 400px;
+            margin-bottom: 1.5rem;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 30px;
+            background-color: rgba(255,255,255,0.1);
+            color: white;
+            font-size: 1rem;
+            text-align: center;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .input-group input:focus {
+            background-color: rgba(255,255,255,0.2);
+            box-shadow: 0 0 0 2px #4facfe;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 30px;
+            background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* لوحة المعلومات */
         #game-header {
             display: flex;
             justify-content: space-between;
-            padding: 10px 20px;
-            background-color: rgba(0, 0, 0, 0.5);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            z-index: 10;
+            padding: 10px 15px;
+            background-color: rgba(0,0,0,0.5);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            flex-wrap: wrap;
         }
 
         .game-info {
             display: flex;
             align-items: center;
-            gap: 10px;
+            margin: 5px 10px;
+            font-size: 0.9rem;
         }
 
-        .score {
-            background-color: #16213e;
-            padding: 5px 10px;
-            border-radius: 20px;
+        .game-info span {
+            margin-right: 5px;
             font-weight: bold;
-            min-width: 80px;
-            text-align: center;
+            color: #4facfe;
         }
 
-        /* Main Game Area */
-        #game-board {
+        /* خريطة اللعبة */
+        #game-map {
             flex: 1;
             position: relative;
             overflow: hidden;
-            background: radial-gradient(circle, #16213e 0%, #1a1a2e 100%);
+            background: linear-gradient(135deg, #1a3a4a 0%, #0f1a23 100%);
+            background-size: 200% 200%;
+            animation: gradientBG 15s ease infinite;
         }
 
-        /* Domino Table */
-        #domino-table {
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* الملجأ */
+        .shelter {
             position: absolute;
+            width: 80px;
+            height: 80px;
+            background-color: #8B4513;
+            border: 3px solid #A0522D;
+            border-radius: 10px;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 90%;
-            height: 60%;
-            background-color: #0f3460;
-            border-radius: 10px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
-        }
-
-        /* Boneyard */
-        #boneyard {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 120px;
-            height: 60px;
-            background-color: rgba(0, 0, 0, 0.3);
-            border-radius: 5px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
+            box-shadow: 0 0 20px rgba(139, 69, 19, 0.5);
             transition: all 0.3s ease;
-        }
-
-        #boneyard:hover {
-            background-color: rgba(0, 0, 0, 0.5);
-        }
-
-        #boneyard-count {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: white;
-        }
-
-        /* Player Hand */
-        #player-hand {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 120px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
-            padding: 10px;
-            overflow-x: auto;
-            overflow-y: hidden;
-            z-index: 5;
-        }
-
-        /* Opponent Hand */
-        #opponent-hand {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 80px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
-            padding: 10px;
-            overflow-x: auto;
-            overflow-y: hidden;
-        }
-
-        /* Domino Piece */
-        .domino {
-            width: 50px;
-            height: 100px;
-            background-color: #fff;
-            border-radius: 5px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            align-items: center;
-            padding: 5px;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
-            transition: all 0.3s ease;
-            cursor: pointer;
-            position: relative;
-        }
-
-        .domino::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            border-radius: 5px;
-            border: 2px solid rgba(0, 0, 0, 0.1);
-            pointer-events: none;
-        }
-
-        .domino.selected {
-            transform: translateY(-20px);
-            box-shadow: 0 10px 20px rgba(255, 255, 255, 0.2);
-        }
-
-        .domino.placeable {
-            box-shadow: 0 0 15px rgba(0, 255, 0, 0.7);
-        }
-
-        .domino-value {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-weight: bold;
-            color: #000;
-        }
-
-        .domino-value.top {
-            align-self: flex-start;
-        }
-
-        .domino-value.bottom {
-            align-self: flex-end;
-        }
-
-        /* Domino on Table */
-        .domino-on-table {
-            position: absolute;
-            width: 50px;
-            height: 100px;
-            background-color: #fff;
-            border-radius: 5px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            align-items: center;
-            padding: 5px;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
             z-index: 2;
         }
 
-        .domino-on-table.horizontal {
-            width: 100px;
-            height: 50px;
-            flex-direction: row;
-        }
-
-        .domino-on-table.horizontal .domino-value.top {
-            align-self: center;
-        }
-
-        .domino-on-table.horizontal .domino-value.bottom {
-            align-self: center;
-        }
-
-        /* Game Controls */
-        #game-controls {
+        .shelter::after {
+            content: '';
             position: absolute;
-            bottom: 130px;
+            top: -15px;
             left: 50%;
             transform: translateX(-50%);
+            width: 40px;
+            height: 20px;
+            background-color: #A0522D;
+            clip-path: polygon(0% 100%, 50% 0%, 100% 100%);
+        }
+
+        /* اللاعب */
+        .player {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            box-shadow: 0 0 10px rgba(79, 172, 254, 0.7);
+            z-index: 3;
+            transition: transform 0.1s ease;
+        }
+
+        .player::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 10px;
+            background-color: rgba(0,0,0,0.3);
+            border-radius: 50%;
+        }
+
+        /* الزومبي */
+        .zombie {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border-radius: 50% 50% 45% 45%;
+            background: linear-gradient(135deg, #7CFC00 0%, #228B22 100%);
+            z-index: 3;
+            animation: zombieFloat 2s ease-in-out infinite;
+            transition: left 0.5s linear, top 0.5s linear;
+        }
+
+        @keyframes zombieFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        .zombie::before {
+            content: '';
+            position: absolute;
+            top: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 15px;
+            height: 10px;
+            background-color: rgba(0,0,0,0.3);
+            border-radius: 50%;
+        }
+
+        .zombie::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 8px;
+            background-color: rgba(0,0,0,0.2);
+            border-radius: 50%;
+        }
+
+        /* الموارد */
+        .resource {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.7);
+            z-index: 1;
+            animation: resourcePulse 2s ease-in-out infinite;
+        }
+
+        @keyframes resourcePulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        /* عناصر التحكم */
+        #game-controls {
             display: flex;
-            gap: 10px;
-            z-index: 10;
+            justify-content: space-between;
+            padding: 10px 15px;
+            background-color: rgba(0,0,0,0.5);
+            border-top: 1px solid rgba(255,255,255,0.1);
         }
 
         .control-btn {
-            padding: 10px 20px;
+            padding: 10px 15px;
             border: none;
-            border-radius: 30px;
+            border-radius: 20px;
             background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
             color: white;
             font-weight: bold;
             cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s ease;
         }
 
         .control-btn:disabled {
@@ -263,344 +292,153 @@
             transform: scale(0.95);
         }
 
-        /* Game Messages */
-        #game-message {
+        /* تأثيرات الليل والنهار */
+        .day-time {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .night-time {
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+        }
+
+        .night-time .shelter {
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.7);
+        }
+
+        /* رسائل اللعبة */
+        .game-message {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background-color: rgba(0, 0, 0, 0.8);
+            background-color: rgba(0,0,0,0.8);
             color: white;
             padding: 20px 30px;
             border-radius: 10px;
             font-size: 1.5rem;
             text-align: center;
-            z-index: 100;
+            z-index: 10;
             opacity: 0;
             transition: opacity 0.3s ease;
             pointer-events: none;
-            max-width: 80%;
         }
 
-        #game-message.show {
+        .game-message.show {
             opacity: 1;
         }
 
-        /* Menu Screens */
-        .menu-screen {
+        /* أدوات التحكم للهاتف */
+        #mobile-controls {
+            display: none;
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(135deg, #1a2a3a 0%, #0f1923 100%);
-            display: flex;
-            flex-direction: column;
+            bottom: 80px;
+            width: 100%;
             justify-content: center;
-            align-items: center;
-            z-index: 200;
-            padding: 20px;
-            transition: opacity 0.5s ease;
-        }
-
-        .menu-screen.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        .menu-title {
-            font-size: 3rem;
-            margin-bottom: 2rem;
-            background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            text-align: center;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-        }
-
-        .menu-options {
-            display: flex;
-            flex-direction: column;
             gap: 20px;
-            width: 100%;
-            max-width: 400px;
+            z-index: 5;
         }
 
-        .menu-btn {
-            padding: 15px 30px;
-            border: none;
-            border-radius: 30px;
-            background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
-            color: white;
-            font-size: 1.2rem;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            text-align: center;
-        }
-
-        .menu-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
-        }
-
-        /* Game Mode Selection */
-        #mode-selection {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            width: 100%;
-            max-width: 400px;
-        }
-
-        .mode-option {
-            background-color: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            padding: 15px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border: 2px solid transparent;
-        }
-
-        .mode-option:hover {
-            background-color: rgba(255, 255, 255, 0.2);
-        }
-
-        .mode-option.selected {
-            border-color: #4facfe;
-            background-color: rgba(79, 172, 254, 0.2);
-        }
-
-        .mode-title {
-            font-size: 1.2rem;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-
-        .mode-description {
-            font-size: 0.9rem;
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        /* Waiting Screen */
-        #waiting-screen {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid rgba(255, 255, 255, 0.3);
+        .mobile-btn {
+            width: 60px;
+            height: 60px;
             border-radius: 50%;
-            border-top-color: #4facfe;
-            animation: spin 1s ease-in-out infinite;
-            margin-bottom: 20px;
+            background-color: rgba(255,255,255,0.2);
+            backdrop-filter: blur(5px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 1.5rem;
+            user-select: none;
+            touch-action: manipulation;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        /* تأثيرات الحركة */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
         }
 
-        /* Domino Dots */
-        .dots-0 { background-color: transparent; }
-        .dots-1 { background-image: radial-gradient(circle at center, #000 25%, transparent 25%); }
-        .dots-2 { background-image: radial-gradient(circle at 30% 30%, #000 25%, transparent 25%),
-                                radial-gradient(circle at 70% 70%, #000 25%, transparent 25%); }
-        .dots-3 { background-image: radial-gradient(circle at 30% 30%, #000 25%, transparent 25%),
-                                radial-gradient(circle at 50% 50%, #000 25%, transparent 25%),
-                                radial-gradient(circle at 70% 70%, #000 25%, transparent 25%); }
-        .dots-4 { background-image: radial-gradient(circle at 30% 30%, #000 25%, transparent 25%),
-                                radial-gradient(circle at 30% 70%, #000 25%, transparent 25%),
-                                radial-gradient(circle at 70% 30%, #000 25%, transparent 25%),
-                                radial-gradient(circle at 70% 70%, #000 25%, transparent 25%); }
-        .dots-5 { background-image: radial-gradient(circle at 30% 30%, #000 25%, transparent 25%),
-                                radial-gradient(circle at 30% 70%, #000 25%, transparent 25%),
-                                radial-gradient(circle at 50% 50%, #000 25%, transparent 25%),
-                                radial-gradient(circle at 70% 30%, #000 25%, transparent 25%),
-                                radial-gradient(circle at 70% 70%, #000 25%, transparent 25%); }
-        .dots-6 { background-image: radial-gradient(circle at 30% 25%, #000 25%, transparent 25%),
-                                radial-gradient(circle at 30% 50%, #000 25%, transparent 25%),
-                                radial-gradient(circle at 30% 75%, #000 25%, transparent 25%),
-                                radial-gradient(circle at 70% 25%, #000 25%, transparent 25%),
-                                radial-gradient(circle at 70% 50%, #000 25%, transparent 25%),
-                                radial-gradient(circle at 70% 75%, #000 25%, transparent 25%); }
+        .shake {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
 
         /* Responsive Design */
         @media (max-width: 768px) {
-            .domino {
-                width: 40px;
-                height: 80px;
+            .game-title {
+                font-size: 1.8rem;
             }
-
-            .domino-on-table {
-                width: 40px;
-                height: 80px;
+            
+            .game-info {
+                font-size: 0.8rem;
             }
-
-            .domino-on-table.horizontal {
-                width: 80px;
-                height: 40px;
+            
+            #mobile-controls {
+                display: flex;
             }
-
-            #player-hand {
-                height: 100px;
+            
+            .control-btn {
+                padding: 8px 12px;
+                font-size: 0.9rem;
             }
-
-            #opponent-hand {
-                height: 60px;
-            }
-
-            .menu-title {
-                font-size: 2rem;
-            }
-
-            .menu-btn {
-                padding: 12px 24px;
-                font-size: 1rem;
-            }
-        }
-
-        /* Animations */
-        @keyframes dominoDraw {
-            0% { transform: scale(0.5); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-
-        @keyframes dominoPlace {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
-        }
-
-        .domino-draw {
-            animation: dominoDraw 0.3s ease-out forwards;
-        }
-
-        .domino-place {
-            animation: dominoPlace 0.2s ease-in-out;
-        }
-
-        /* Turn Indicator */
-        #turn-indicator {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 10px 20px;
-            border-radius: 20px;
-            font-size: 1rem;
-            z-index: 5;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            pointer-events: none;
-        }
-
-        #turn-indicator.show {
-            opacity: 1;
         }
     </style>
 </head>
 <body>
-    <div id="game-container">
-        <!-- Main Menu -->
-        <div id="main-menu" class="menu-screen">
-            <h1 class="menu-title">Domino Master</h1>
-            <div class="menu-options">
-                <button id="new-game-btn" class="menu-btn">New Game</button>
-                <button id="how-to-play-btn" class="menu-btn">How to Play</button>
+    <div id="app-container">
+        <!-- شاشة الدخول -->
+        <div id="login-screen">
+            <h1 class="game-title">لعبة البقاء على قيد الحياة</h1>
+            <div class="input-group">
+                <input type="text" id="player-name" placeholder="أدخل اسم اللاعب" maxlength="15">
             </div>
+            <button id="start-btn" class="btn">بدء اللعبة</button>
         </div>
 
-        <!-- Game Mode Selection -->
-        <div id="mode-menu" class="menu-screen hidden">
-            <h1 class="menu-title">Select Game Mode</h1>
-            <div id="mode-selection">
-                <div class="mode-option" data-mode="single">
-                    <div class="mode-title">Single Player</div>
-                    <div class="mode-description">Play against computer AI</div>
-                </div>
-                <div class="mode-option" data-mode="multi">
-                    <div class="mode-title">Multiplayer</div>
-                    <div class="mode-description">Play with a friend online</div>
-                </div>
-            </div>
-            <button id="start-game-btn" class="menu-btn" style="margin-top: 30px;">Start Game</button>
-            <button id="back-to-menu-btn" class="menu-btn" style="background: transparent; border: 1px solid #4facfe; margin-top: 10px;">Back</button>
-        </div>
-
-        <!-- Waiting for Opponent -->
-        <div id="waiting-menu" class="menu-screen hidden">
-            <div class="spinner"></div>
-            <h2 id="waiting-text">Waiting for opponent...</h2>
-            <button id="cancel-waiting-btn" class="menu-btn" style="margin-top: 30px;">Cancel</button>
-        </div>
-
-        <!-- How to Play -->
-        <div id="how-to-play-menu" class="menu-screen hidden">
-            <h1 class="menu-title">How to Play</h1>
-            <div style="max-width: 500px; padding: 20px; overflow-y: auto; max-height: 60vh;">
-                <h3 style="margin-bottom: 10px;">Domino Rules</h3>
-                <p style="margin-bottom: 15px; line-height: 1.5;">
-                    The game uses a standard double-six domino set (28 pieces). 
-                    Each player starts with 7 dominoes. The player with the highest 
-                    double (e.g., [6|6]) plays first. If no one has a double, the 
-                    player with the highest-value domino plays first.
-                </p>
-                <p style="margin-bottom: 15px; line-height: 1.5;">
-                    On each turn, a player must play a domino that matches the 
-                    number on one end of the domino chain. If a player cannot play, 
-                    they must draw from the boneyard until they can play or the 
-                    boneyard is empty.
-                </p>
-                <p style="margin-bottom: 15px; line-height: 1.5;">
-                    The game ends when one player plays all their dominoes or when 
-                    no more moves are possible (blocked game). The winner is the 
-                    player with no dominoes left or the player with the fewest 
-                    points in their hand when the game is blocked.
-                </p>
-            </div>
-            <button id="back-from-help-btn" class="menu-btn" style="margin-top: 20px;">Back to Menu</button>
-        </div>
-
-        <!-- Game UI -->
+        <!-- واجهة اللعبة الرئيسية -->
         <div id="game-header">
             <div class="game-info">
-                <div class="score" id="player-score">You: 0</div>
+                <span id="day-night-indicator">🌞 النهار</span>
             </div>
             <div class="game-info">
-                <div id="game-status">Game Starting...</div>
+                <span id="time-left">الوقت: 120</span>
             </div>
             <div class="game-info">
-                <div class="score" id="opponent-score">Opp: 0</div>
+                <span id="resources-counter">الموارد: 0</span>
+            </div>
+            <div class="game-info">
+                <span id="shelter-health">الملجأ: 100%</span>
+            </div>
+            <div class="game-info">
+                <span id="role-display">الدور: جامع موارد</span>
             </div>
         </div>
 
-        <div id="game-board">
-            <div id="turn-indicator">Your Turn</div>
-            <div id="domino-table"></div>
-            <div id="opponent-hand"></div>
-            <div id="player-hand"></div>
-            <div id="game-controls">
-                <button id="pass-turn-btn" class="control-btn" disabled>Pass Turn</button>
-                <button id="rotate-btn" class="control-btn" disabled>Rotate</button>
+        <div id="game-map">
+            <div id="shelter" class="shelter"></div>
+            <div id="player" class="player"></div>
+            <div id="zombies-container"></div>
+            <div id="resources-container"></div>
+            
+            <!-- أدوات التحكم للهاتف -->
+            <div id="mobile-controls">
+                <div class="mobile-btn" id="mobile-up">↑</div>
+                <div class="mobile-btn" id="mobile-left">←</div>
+                <div class="mobile-btn" id="mobile-right">→</div>
+                <div class="mobile-btn" id="mobile-down">↓</div>
             </div>
-            <div id="boneyard">
-                <div id="boneyard-count">28</div>
-            </div>
-            <div id="game-message"></div>
         </div>
+
+        <div id="game-controls">
+            <button id="build-btn" class="control-btn">تحسين الملجأ (10 موارد)</button>
+            <button id="collect-btn" class="control-btn">جمع الموارد</button>
+        </div>
+
+        <!-- رسائل اللعبة -->
+        <div id="game-message" class="game-message"></div>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
     <script>
         // Firebase configuration
         const firebaseConfig = {
@@ -618,1448 +456,618 @@
         const database = firebase.database();
         const auth = firebase.auth();
 
-        // Game State
+        // حالة اللعبة
         const gameState = {
-            mode: null, // 'single' or 'multi'
             playerId: null,
-            playerName: 'Player',
-            gameId: null,
-            gameRef: null,
+            playerName: '',
             playerRef: null,
-            opponentRef: null,
-            dominoSet: [],
-            playerHand: [],
-            opponentHand: [],
-            tableDominos: [],
-            boneyard: [],
-            currentTurn: null,
-            selectedDomino: null,
-            lastPlacedDomino: null,
-            gameStarted: false,
-            gameEnded: false,
-            playerScore: 0,
-            opponentScore: 0,
-            isRotated: false,
-            roomCode: null,
-            isHost: false,
-            aiDifficulty: 'medium' // 'easy', 'medium', 'hard'
+            gameRef: null,
+            players: {},
+            zombies: {},
+            resources: {},
+            gameData: {
+                dayNightCycle: 'day',
+                timeLeft: 120,
+                shelterHealth: 100,
+                shelterLevel: 1,
+                wave: 0,
+                gameOver: false
+            },
+            controls: {
+                up: false,
+                down: false,
+                left: false,
+                right: false
+            },
+            lastUpdate: 0,
+            updateInterval: 50, // مللي ثانية بين التحديثات
+            playerSpeed: 5,
+            isCollecting: false,
+            collectionRange: 50
         };
 
-        // DOM Elements
+        // عناصر DOM
         const elements = {
-            mainMenu: document.getElementById('main-menu'),
-            modeMenu: document.getElementById('mode-menu'),
-            waitingMenu: document.getElementById('waiting-menu'),
-            howToPlayMenu: document.getElementById('how-to-play-menu'),
-            newGameBtn: document.getElementById('new-game-btn'),
-            howToPlayBtn: document.getElementById('how-to-play-btn'),
-            startGameBtn: document.getElementById('start-game-btn'),
-            backToMenuBtn: document.getElementById('back-to-menu-btn'),
-            cancelWaitingBtn: document.getElementById('cancel-waiting-btn'),
-            backFromHelpBtn: document.getElementById('back-from-help-btn'),
-            modeOptions: document.querySelectorAll('.mode-option'),
-            waitingText: document.getElementById('waiting-text'),
-            gameBoard: document.getElementById('game-board'),
-            dominoTable: document.getElementById('domino-table'),
-            playerHand: document.getElementById('player-hand'),
-            opponentHand: document.getElementById('opponent-hand'),
-            boneyard: document.getElementById('boneyard'),
-            boneyardCount: document.getElementById('boneyard-count'),
-            gameStatus: document.getElementById('game-status'),
-            playerScore: document.getElementById('player-score'),
-            opponentScore: document.getElementById('opponent-score'),
-            passTurnBtn: document.getElementById('pass-turn-btn'),
-            rotateBtn: document.getElementById('rotate-btn'),
+            loginScreen: document.getElementById('login-screen'),
+            gameHeader: document.getElementById('game-header'),
+            gameMap: document.getElementById('game-map'),
+            shelter: document.getElementById('shelter'),
+            player: document.getElementById('player'),
+            zombiesContainer: document.getElementById('zombies-container'),
+            resourcesContainer: document.getElementById('resources-container'),
+            dayNightIndicator: document.getElementById('day-night-indicator'),
+            timeLeft: document.getElementById('time-left'),
+            resourcesCounter: document.getElementById('resources-counter'),
+            shelterHealth: document.getElementById('shelter-health'),
+            roleDisplay: document.getElementById('role-display'),
+            buildBtn: document.getElementById('build-btn'),
+            collectBtn: document.getElementById('collect-btn'),
             gameMessage: document.getElementById('game-message'),
-            turnIndicator: document.getElementById('turn-indicator')
+            playerNameInput: document.getElementById('player-name'),
+            startBtn: document.getElementById('start-btn'),
+            mobileUp: document.getElementById('mobile-up'),
+            mobileLeft: document.getElementById('mobile-left'),
+            mobileRight: document.getElementById('mobile-right'),
+            mobileDown: document.getElementById('mobile-down')
         };
 
-        // Initialize the game
+        // تهيئة اللعبة
         function initGame() {
-            setupEventListeners();
+            // تسجيل الدخول المجهول
             auth.signInAnonymously()
                 .then(() => {
-                    console.log('Authenticated anonymously');
+                    // بدء اللعبة بعد تسجيل الدخول
+                    startGame();
                 })
                 .catch(error => {
-                    console.error('Authentication error:', error);
-                    showMessage('Connection error. Please refresh the page.');
+                    showMessage(`خطأ في الاتصال: ${error.message}`);
                 });
         }
 
-        // Set up event listeners
-        function setupEventListeners() {
-            // Menu buttons
-            elements.newGameBtn.addEventListener('click', () => {
-                elements.mainMenu.classList.add('hidden');
-                elements.modeMenu.classList.remove('hidden');
-            });
-
-            elements.howToPlayBtn.addEventListener('click', () => {
-                elements.mainMenu.classList.add('hidden');
-                elements.howToPlayMenu.classList.remove('hidden');
-            });
-
-            elements.backFromHelpBtn.addEventListener('click', () => {
-                elements.howToPlayMenu.classList.add('hidden');
-                elements.mainMenu.classList.remove('hidden');
-            });
-
-            elements.backToMenuBtn.addEventListener('click', () => {
-                elements.modeMenu.classList.add('hidden');
-                elements.mainMenu.classList.remove('hidden');
-            });
-
-            // Mode selection
-            elements.modeOptions.forEach(option => {
-                option.addEventListener('click', () => {
-                    elements.modeOptions.forEach(opt => opt.classList.remove('selected'));
-                    option.classList.add('selected');
-                    gameState.mode = option.dataset.mode;
-                });
-            });
-
-            // Start game button
-            elements.startGameBtn.addEventListener('click', () => {
-                if (!gameState.mode) {
-                    showMessage('Please select a game mode');
-                    return;
-                }
-
-                elements.modeMenu.classList.add('hidden');
-                
-                if (gameState.mode === 'single') {
-                    startSinglePlayerGame();
-                } else {
-                    createMultiplayerGame();
-                }
-            });
-
-            // Cancel waiting button
-            elements.cancelWaitingBtn.addEventListener('click', () => {
-                if (gameState.gameRef) {
-                    if (gameState.isHost) {
-                        gameState.gameRef.remove();
-                    }
-                    leaveGame();
-                }
-                elements.waitingMenu.classList.add('hidden');
-                elements.modeMenu.classList.remove('hidden');
-            });
-
-            // Game controls
-            elements.passTurnBtn.addEventListener('click', passTurn);
-            elements.rotateBtn.addEventListener('click', rotateSelectedDomino);
-            elements.boneyard.addEventListener('click', drawFromBoneyard);
-
-            // Keyboard controls
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'r' || e.key === 'R') {
-                    rotateSelectedDomino();
-                } else if (e.key === 'p' || e.key === 'P') {
-                    passTurn();
-                } else if (e.key === 'Escape') {
-                    if (gameState.selectedDomino) {
-                        deselectDomino();
-                    }
-                }
-            });
-        }
-
-        // Start a single player game
-        function startSinglePlayerGame() {
-            gameState.playerId = 'player_' + Date.now();
-            gameState.playerName = 'You';
-            gameState.gameId = 'single_' + Date.now();
-            
-            initializeGame();
-            dealDominos();
-            
-            // AI opponent
-            gameState.opponentRef = {
-                update: (data) => {
-                    if (data.hand) gameState.opponentHand = data.hand;
-                    if (data.score !== undefined) gameState.opponentScore = data.score;
-                    updateOpponentHandDisplay();
-                }
-            };
-            
-            // Start the game
-            startGame();
-        }
-
-        // Create a multiplayer game
-        function createMultiplayerGame() {
-            elements.waitingText.textContent = 'Creating game...';
-            elements.waitingMenu.classList.remove('hidden');
-            
-            gameState.playerId = 'player_' + Date.now();
-            gameState.playerName = 'Player 1';
-            gameState.gameId = 'game_' + Date.now();
-            gameState.isHost = true;
-            
-            // Generate a simple room code
-            gameState.roomCode = Math.floor(1000 + Math.random() * 9000);
-            elements.waitingText.textContent = `Room Code: ${gameState.roomCode}\nWaiting for opponent...`;
-            
-            // Create game in Firebase
-            gameState.gameRef = database.ref(`games/${gameState.gameId}`);
-            
-            // Initialize game data
-            const gameData = {
-                roomCode: gameState.roomCode,
-                host: gameState.playerId,
-                status: 'waiting',
-                players: {
-                    [gameState.playerId]: {
-                        name: gameState.playerName,
-                        score: 0,
-                        isReady: false
-                    }
-                },
-                createdAt: firebase.database.ServerValue.TIMESTAMP
-            };
-            
-            gameState.gameRef.set(gameData)
-                .then(() => {
-                    // Listen for game changes
-                    setupMultiplayerListeners();
-                    
-                    // Set up player reference
-                    gameState.playerRef = database.ref(`games/${gameState.gameId}/players/${gameState.playerId}`);
-                    
-                    // Listen for opponent joining
-                    gameState.gameRef.child('players').on('child_added', (snapshot) => {
-                        if (snapshot.key !== gameState.playerId) {
-                            // Opponent joined
-                            gameState.opponentRef = database.ref(`games/${gameState.gameId}/players/${snapshot.key}`);
-                            startMultiplayerGame();
-                        }
-                    });
-                    
-                    // Clean up abandoned games
-                    gameState.gameRef.onDisconnect().remove();
-                })
-                .catch(error => {
-                    console.error('Error creating game:', error);
-                    showMessage('Error creating game. Please try again.');
-                    elements.waitingMenu.classList.add('hidden');
-                    elements.modeMenu.classList.remove('hidden');
-                });
-        }
-
-        // Join a multiplayer game
-        function joinMultiplayerGame(roomCode) {
-            elements.waitingText.textContent = 'Finding game...';
-            elements.waitingMenu.classList.remove('hidden');
-            
-            gameState.playerId = 'player_' + Date.now();
-            gameState.playerName = 'Player 2';
-            
-            // Find game by room code
-            database.ref('games').orderByChild('roomCode').equalTo(parseInt(roomCode)).once('value')
-                .then(snapshot => {
-                    if (snapshot.exists()) {
-                        const gameData = snapshot.val();
-                        const gameId = Object.keys(gameData)[0];
-                        gameState.gameId = gameId;
-                        gameState.gameRef = database.ref(`games/${gameId}`);
-                        
-                        // Join the game
-                        gameState.playerRef = database.ref(`games/${gameId}/players/${gameState.playerId}`);
-                        gameState.playerRef.set({
-                            name: gameState.playerName,
-                            score: 0,
-                            isReady: false
-                        });
-                        
-                        // Set opponent reference (host)
-                        for (const playerId in gameData[gameId].players) {
-                            if (playerId !== gameState.playerId) {
-                                gameState.opponentRef = database.ref(`games/${gameId}/players/${playerId}`);
-                                break;
-                            }
-                        }
-                        
-                        // Set up listeners
-                        setupMultiplayerListeners();
-                        
-                        // Notify host that player has joined
-                        gameState.gameRef.update({
-                            status: 'ready',
-                            [`players/${gameState.playerId}/isReady`]: true
-                        });
-                        
-                        // Start the game
-                        startMultiplayerGame();
-                    } else {
-                        showMessage('Game not found. Please check the room code.');
-                        elements.waitingMenu.classList.add('hidden');
-                        elements.modeMenu.classList.remove('hidden');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error joining game:', error);
-                    showMessage('Error joining game. Please try again.');
-                    elements.waitingMenu.classList.add('hidden');
-                    elements.modeMenu.classList.remove('hidden');
-                });
-        }
-
-        // Set up multiplayer listeners
-        function setupMultiplayerListeners() {
-            // Game state changes
-            gameState.gameRef.on('value', (snapshot) => {
-                const gameData = snapshot.val();
-                if (!gameData) return;
-                
-                // Update game status
-                if (gameData.status === 'playing') {
-                    if (!gameState.gameStarted) {
-                        initializeGame();
-                        dealDominos();
-                        startGame();
-                    }
-                    
-                    // Update table dominos
-                    if (gameData.tableDominos && JSON.stringify(gameData.tableDominos) !== JSON.stringify(gameState.tableDominos)) {
-                        gameState.tableDominos = gameData.tableDominos || [];
-                        updateTableDisplay();
-                    }
-                    
-                    // Update boneyard
-                    if (gameData.boneyard && gameData.boneyard.length !== gameState.boneyard.length) {
-                        gameState.boneyard = gameData.boneyard || [];
-                        updateBoneyardDisplay();
-                    }
-                    
-                    // Update current turn
-                    if (gameData.currentTurn && gameData.currentTurn !== gameState.currentTurn) {
-                        gameState.currentTurn = gameData.currentTurn;
-                        updateTurnDisplay();
-                    }
-                    
-                    // Update game status
-                    if (gameData.gameStatus) {
-                        elements.gameStatus.textContent = gameData.gameStatus;
-                    }
-                    
-                    // Check for game end
-                    if (gameData.gameEnded && !gameState.gameEnded) {
-                        gameState.gameEnded = true;
-                        endGame(gameData.winner);
-                    }
-                }
-            });
-            
-            // Opponent updates
-            if (gameState.opponentRef) {
-                gameState.opponentRef.on('value', (snapshot) => {
-                    const opponentData = snapshot.val();
-                    if (opponentData) {
-                        if (opponentData.hand) {
-                            gameState.opponentHand = opponentData.hand;
-                            updateOpponentHandDisplay();
-                        }
-                        if (opponentData.score !== undefined) {
-                            gameState.opponentScore = opponentData.score;
-                            elements.opponentScore.textContent = `Opp: ${gameState.opponentScore}`;
-                        }
-                    }
-                });
-            }
-            
-            // Clean up when opponent leaves
-            gameState.gameRef.child('players').on('child_removed', (snapshot) => {
-                if (snapshot.key !== gameState.playerId) {
-                    showMessage('Opponent has left the game', 0);
-                    leaveGame();
-                }
-            });
-        }
-
-        // Start multiplayer game
-        function startMultiplayerGame() {
-            elements.waitingText.textContent = 'Starting game...';
-            
-            // Initialize game data
-            gameState.gameRef.transaction((current) => {
-                if (!current) return;
-                
-                current.status = 'playing';
-                current.gameStarted = true;
-                current.gameEnded = false;
-                current.tableDominos = [];
-                current.boneyard = [];
-                current.currentTurn = null;
-                current.gameStatus = 'Game starting...';
-                
-                return current;
-            }).then(() => {
-                elements.waitingMenu.classList.add('hidden');
-                
-                // Initialize the domino set and deal
-                initializeGame();
-                dealDominos();
-                
-                // Determine who starts
-                determineFirstPlayer();
-            });
-        }
-
-        // Initialize the domino set
-        function initializeGame() {
-            gameState.dominoSet = [];
-            gameState.playerHand = [];
-            gameState.opponentHand = [];
-            gameState.tableDominos = [];
-            gameState.boneyard = [];
-            gameState.currentTurn = null;
-            gameState.gameStarted = true;
-            gameState.gameEnded = false;
-            gameState.playerScore = 0;
-            gameState.opponentScore = 0;
-            gameState.selectedDomino = null;
-            gameState.lastPlacedDomino = null;
-            
-            // Create all 28 dominoes
-            for (let i = 0; i <= 6; i++) {
-                for (let j = i; j <= 6; j++) {
-                    gameState.dominoSet.push({ top: i, bottom: j });
-                }
-            }
-            
-            // Shuffle the dominoes
-            shuffleArray(gameState.dominoSet);
-            
-            // Update UI
-            updatePlayerHandDisplay();
-            updateOpponentHandDisplay();
-            updateTableDisplay();
-            updateBoneyardDisplay();
-            updateScoresDisplay();
-            
-            elements.gameStatus.textContent = 'Game starting...';
-        }
-
-        // Deal dominos to players
-        function dealDominos() {
-            // Deal 7 dominoes to each player
-            gameState.playerHand = gameState.dominoSet.splice(0, 7);
-            gameState.opponentHand = gameState.dominoSet.splice(0, 7);
-            
-            // The rest go to the boneyard
-            gameState.boneyard = [...gameState.dominoSet];
-            gameState.dominoSet = [];
-            
-            // Update Firebase in multiplayer mode
-            if (gameState.mode === 'multi') {
-                gameState.playerRef.update({
-                    hand: gameState.playerHand,
-                    score: 0
-                });
-                
-                gameState.gameRef.update({
-                    boneyard: gameState.boneyard,
-                    tableDominos: gameState.tableDominos
-                });
-            }
-            
-            // Update UI
-            updatePlayerHandDisplay();
-            updateOpponentHandDisplay();
-            updateBoneyardDisplay();
-        }
-
-        // Start the game
+        // بدء اللعبة
         function startGame() {
-            if (gameState.mode === 'single') {
-                determineFirstPlayer();
-            }
+            gameState.playerName = elements.playerNameInput.value.trim() || 'لاعب' + Math.floor(Math.random() * 1000);
+            
+            // إنشاء معرف فريد للاعب
+            gameState.playerId = 'player_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+            
+            // إخفاء شاشة الدخول
+            elements.loginScreen.classList.add('hidden');
+            
+            // تهيئة مراجع Firebase
+            gameState.gameRef = database.ref('game');
+            gameState.playerRef = database.ref(`players/${gameState.playerId}`);
+            
+            // تعيين دور اللاعب عشوائياً
+            const roles = ['جامع موارد', 'حارس', 'بناء'];
+            const playerRole = roles[Math.floor(Math.random() * roles.length)];
+            
+            // حفظ بيانات اللاعب
+            gameState.playerRef.set({
+                name: gameState.playerName,
+                role: playerRole,
+                resources: 0,
+                position: { x: 300, y: 300 },
+                lastActive: firebase.database.ServerValue.TIMESTAMP
+            });
+            
+            // تحديث عرض الدور
+            elements.roleDisplay.textContent = `الدور: ${playerRole}`;
+            
+            // تهيئة المستمعين
+            setupEventListeners();
+            setupFirebaseListeners();
+            setupGameLoop();
+            
+            // بدء دورة الليل والنهار
+            startDayNightCycle();
+            
+            // إنشاء موارد أولية
+            spawnInitialResources();
         }
 
-        // Determine who plays first
-        function determineFirstPlayer() {
-            // Find the highest double in player's hand
-            const playerDoubles = gameState.playerHand.filter(d => d.top === d.bottom);
-            const playerHighestDouble = playerDoubles.length > 0 ? 
-                Math.max(...playerDoubles.map(d => d.top)) : -1;
+        // تهيئة مستمعي الأحداث
+        function setupEventListeners() {
+            // لوحة المفاتيح
+            document.addEventListener('keydown', handleKeyDown);
+            document.addEventListener('keyup', handleKeyUp);
             
-            // Find the highest double in opponent's hand
-            const opponentDoubles = gameState.opponentHand.filter(d => d.top === d.bottom);
-            const opponentHighestDouble = opponentDoubles.length > 0 ? 
-                Math.max(...opponentDoubles.map(d => d.top)) : -1;
+            // أزرار التحكم
+            elements.buildBtn.addEventListener('click', upgradeShelter);
+            elements.collectBtn.addEventListener('click', collectResources);
             
-            if (playerHighestDouble > opponentHighestDouble) {
-                // Player starts
-                startTurn(gameState.playerId);
-                
-                if (gameState.mode === 'single') {
-                    // Place the highest double automatically
-                    const dominoIndex = gameState.playerHand.findIndex(d => d.top === playerHighestDouble && d.bottom === playerHighestDouble);
-                    const domino = gameState.playerHand[dominoIndex];
-                    placeDomino(domino, true);
-                    
-                    // Remove from hand
-                    gameState.playerHand.splice(dominoIndex, 1);
-                    updatePlayerHandDisplay();
-                    
-                    // Add to table
-                    gameState.tableDominos.push(domino);
-                    updateTableDisplay();
-                    
-                    // End turn
-                    endTurn();
-                } else {
-                    showMessage('Place your highest double to start the game');
-                }
-            } else if (opponentHighestDouble > playerHighestDouble) {
-                // Opponent starts
-                if (gameState.mode === 'single') {
-                    // AI places its highest double
-                    startTurn('ai');
-                    const dominoIndex = gameState.opponentHand.findIndex(d => d.top === opponentHighestDouble && d.bottom === opponentHighestDouble);
-                    const domino = gameState.opponentHand[dominoIndex];
-                    
-                    // Remove from hand
-                    gameState.opponentHand.splice(dominoIndex, 1);
-                    updateOpponentHandDisplay();
-                    
-                    // Add to table
-                    gameState.tableDominos.push(domino);
-                    if (gameState.mode === 'multi') {
-                        gameState.gameRef.update({
-                            tableDominos: gameState.tableDominos
-                        });
-                    }
-                    updateTableDisplay();
-                    
-                    // End turn
-                    endTurn();
-                } else {
-                    startTurn(gameState.opponentRef.key);
-                    showMessage('Waiting for opponent to start the game...');
-                }
-            } else {
-                // No doubles, find highest value domino
-                const playerHighest = getHighestDomino(gameState.playerHand);
-                const opponentHighest = getHighestDomino(gameState.opponentHand);
-                
-                if (playerHighest.total > opponentHighest.total) {
-                    // Player starts
-                    startTurn(gameState.playerId);
-                    
-                    if (gameState.mode === 'single') {
-                        // Place the highest domino automatically
-                        const dominoIndex = gameState.playerHand.findIndex(d => 
-                            d.top === playerHighest.domino.top && d.bottom === playerHighest.domino.bottom);
-                        const domino = gameState.playerHand[dominoIndex];
-                        placeDomino(domino, true);
-                        
-                        // Remove from hand
-                        gameState.playerHand.splice(dominoIndex, 1);
-                        updatePlayerHandDisplay();
-                        
-                        // Add to table
-                        gameState.tableDominos.push(domino);
-                        updateTableDisplay();
-                        
-                        // End turn
-                        endTurn();
-                    } else {
-                        showMessage('Place your highest domino to start the game');
-                    }
-                } else {
-                    // Opponent starts
-                    if (gameState.mode === 'single') {
-                        // AI places its highest domino
-                        startTurn('ai');
-                        const dominoIndex = gameState.opponentHand.findIndex(d => 
-                            d.top === opponentHighest.domino.top && d.bottom === opponentHighest.domino.bottom);
-                        const domino = gameState.opponentHand[dominoIndex];
-                        
-                        // Remove from hand
-                        gameState.opponentHand.splice(dominoIndex, 1);
-                        updateOpponentHandDisplay();
-                        
-                        // Add to table
-                        gameState.tableDominos.push(domino);
-                        if (gameState.mode === 'multi') {
-                            gameState.gameRef.update({
-                                tableDominos: gameState.tableDominos
-                            });
-                        }
-                        updateTableDisplay();
-                        
-                        // End turn
-                        endTurn();
-                    } else {
-                        startTurn(gameState.opponentRef.key);
-                        showMessage('Waiting for opponent to start the game...');
-                    }
-                }
-            }
+            // أدوات التحكم للهاتف
+            elements.mobileUp.addEventListener('touchstart', () => gameState.controls.up = true);
+            elements.mobileUp.addEventListener('touchend', () => gameState.controls.up = false);
+            elements.mobileLeft.addEventListener('touchstart', () => gameState.controls.left = true);
+            elements.mobileLeft.addEventListener('touchend', () => gameState.controls.left = false);
+            elements.mobileRight.addEventListener('touchstart', () => gameState.controls.right = true);
+            elements.mobileRight.addEventListener('touchend', () => gameState.controls.right = false);
+            elements.mobileDown.addEventListener('touchstart', () => gameState.controls.down = true);
+            elements.mobileDown.addEventListener('touchend', () => gameState.controls.down = false);
+            
+            // بدء اللعبة
+            elements.startBtn.addEventListener('click', initGame);
+            elements.playerNameInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') initGame();
+            });
         }
 
-        // Get the highest value domino
-        function getHighestDomino(hand) {
-            let highest = { domino: null, total: -1 };
-            
-            hand.forEach(domino => {
-                const total = domino.top + domino.bottom;
-                if (total > highest.total) {
-                    highest = { domino, total };
+        // تهيئة مستمعي Firebase
+        function setupFirebaseListeners() {
+            // تحديث حالة اللعبة
+            gameState.gameRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    gameState.gameData = data;
+                    updateGameUI();
+                    
+                    // توليد الزومبي في الليل
+                    if (data.dayNightCycle === 'night' && data.wave > 0 && Object.keys(gameState.zombies).length === 0) {
+                        spawnZombies(data.wave);
+                    }
                 }
             });
             
-            return highest;
+            // تحديث اللاعبين
+            database.ref('players').on('value', (snapshot) => {
+                gameState.players = snapshot.val() || {};
+                updatePlayersOnScreen();
+            });
+            
+            // تحديث الزومبي
+            database.ref('zombies').on('value', (snapshot) => {
+                gameState.zombies = snapshot.val() || {};
+                updateZombiesOnScreen();
+            });
+            
+            // تحديث الموارد
+            database.ref('resources').on('value', (snapshot) => {
+                gameState.resources = snapshot.val() || {};
+                updateResourcesOnScreen();
+            });
         }
 
-        // Start a player's turn
-        function startTurn(playerId) {
-            gameState.currentTurn = playerId;
-            
-            if (gameState.mode === 'multi') {
-                gameState.gameRef.update({
-                    currentTurn: playerId,
-                    gameStatus: playerId === gameState.playerId ? 'Your turn' : 'Opponent\'s turn'
-                });
+        // دورة اللعبة الرئيسية
+        function setupGameLoop() {
+            function gameLoop(timestamp) {
+                if (!gameState.lastUpdate) gameState.lastUpdate = timestamp;
+                const deltaTime = timestamp - gameState.lastUpdate;
+                
+                if (deltaTime >= gameState.updateInterval) {
+                    updatePlayerPosition();
+                    checkResourceCollection();
+                    checkZombieCollisions();
+                    gameState.lastUpdate = timestamp;
+                }
+                
+                if (!gameState.gameData.gameOver) {
+                    requestAnimationFrame(gameLoop);
+                }
             }
             
-            updateTurnDisplay();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // دورة الليل والنهار
+        function startDayNightCycle() {
+            setInterval(() => {
+                if (gameState.gameData.gameOver) return;
+                
+                gameState.gameRef.transaction((current) => {
+                    if (!current) return;
+                    
+                    // تقليل الوقت المتبقي
+                    current.timeLeft--;
+                    
+                    // تغيير الليل والنهار
+                    if (current.timeLeft <= 0) {
+                        if (current.dayNightCycle === 'day') {
+                            // بدء الليل وموجة زومبي جديدة
+                            current.dayNightCycle = 'night';
+                            current.timeLeft = 60; // 60 ثانية ليلاً
+                            current.wave++;
+                            
+                            // إظهار رسالة
+                            showMessage(`موجة الزومبي #${current.wave}!`, 3000);
+                        } else {
+                            // بدء النهار
+                            current.dayNightCycle = 'day';
+                            current.timeLeft = 120; // 120 ثانية نهاراً
+                            
+                            // إزالة جميع الزومبي
+                            database.ref('zombies').remove();
+                            
+                            // إنشاء موارد جديدة
+                            spawnResources(5);
+                        }
+                    }
+                    
+                    return current;
+                });
+            }, 1000);
+        }
+
+        // تحديث واجهة المستخدم
+        function updateGameUI() {
+            // تحديث مؤشر الليل والنهار
+            if (gameState.gameData.dayNightCycle === 'day') {
+                elements.dayNightIndicator.textContent = '🌞 النهار';
+                elements.gameMap.classList.remove('night-time');
+                elements.gameMap.classList.add('day-time');
+            } else {
+                elements.dayNightIndicator.textContent = '🌚 الليل';
+                elements.gameMap.classList.remove('day-time');
+                elements.gameMap.classList.add('night-time');
+            }
             
-            if (playerId === 'ai') {
-                // AI turn
+            // تحديث الوقت المتبقي
+            elements.timeLeft.textContent = `الوقت: ${gameState.gameData.timeLeft}`;
+            
+            // تحديث صحة الملجأ
+            elements.shelterHealth.textContent = `الملجأ: ${gameState.gameData.shelterHealth}%`;
+            
+            // تحديث زر التحسين
+            elements.buildBtn.textContent = `تحسين الملجأ (${10 * gameState.gameData.shelterLevel} موارد)`;
+            elements.buildBtn.disabled = gameState.players[gameState.playerId]?.resources < (10 * gameState.gameData.shelterLevel);
+            
+            // هزة عند تضرر الملجأ
+            if (gameState.gameData.shelterHealth < 30) {
+                elements.shelter.classList.add('shake');
                 setTimeout(() => {
-                    aiMakeMove();
-                }, 1000);
+                    elements.shelter.classList.remove('shake');
+                }, 500);
+            }
+            
+            // نهاية اللعبة
+            if (gameState.gameData.shelterHealth <= 0 && !gameState.gameData.gameOver) {
+                gameState.gameRef.update({ gameOver: true });
+                showMessage('انتهت اللعبة! لقد دمر الزومبي الملجأ.', 0);
             }
         }
 
-        // Update turn display
-        function updateTurnDisplay() {
-            if (gameState.currentTurn === gameState.playerId) {
-                elements.turnIndicator.textContent = 'Your Turn';
-                elements.turnIndicator.classList.add('show');
-                elements.passTurnBtn.disabled = false;
-            } else if (gameState.currentTurn === 'ai' || 
-                      (gameState.mode === 'multi' && gameState.currentTurn !== gameState.playerId)) {
-                elements.turnIndicator.textContent = 'Opponent\'s Turn';
-                elements.turnIndicator.classList.add('show');
-                elements.passTurnBtn.disabled = true;
-            } else {
-                elements.turnIndicator.classList.remove('show');
-                elements.passTurnBtn.disabled = true;
+        // تحديث موقع اللاعب
+        function updatePlayerPosition() {
+            if (!gameState.playerRef || !gameState.controls) return;
+            
+            const player = gameState.players[gameState.playerId];
+            if (!player) return;
+            
+            let newX = player.position.x || 300;
+            let newY = player.position.y || 300;
+            
+            if (gameState.controls.up) newY -= gameState.playerSpeed;
+            if (gameState.controls.down) newY += gameState.playerSpeed;
+            if (gameState.controls.left) newX -= gameState.playerSpeed;
+            if (gameState.controls.right) newX += gameState.playerSpeed;
+            
+            // الحدود
+            newX = Math.max(20, Math.min(newX, elements.gameMap.offsetWidth - 20));
+            newY = Math.max(20, Math.min(newY, elements.gameMap.offsetHeight - 20));
+            
+            // تحديث الموقع في Firebase
+            gameState.playerRef.update({
+                position: { x: newX, y: newY },
+                lastActive: firebase.database.ServerValue.TIMESTAMP
+            });
+        }
+
+        // تحديث اللاعبين على الشاشة
+        function updatePlayersOnScreen() {
+            // في هذه النسخة المبسطة، نعرض فقط اللاعب الحالي
+            const player = gameState.players[gameState.playerId];
+            if (player) {
+                elements.player.style.left = `${player.position.x - 15}px`;
+                elements.player.style.top = `${player.position.y - 15}px`;
+                elements.resourcesCounter.textContent = `الموارد: ${player.resources}`;
             }
         }
 
-        // End current turn
-        function endTurn() {
-            // Check for game end
-            if (gameState.playerHand.length === 0) {
-                endGame(gameState.playerId);
-                return;
-            }
+        // تحديث الزومبي على الشاشة
+        function updateZombiesOnScreen() {
+            elements.zombiesContainer.innerHTML = '';
             
-            if (gameState.opponentHand.length === 0) {
-                endGame(gameState.mode === 'single' ? 'ai' : gameState.opponentRef.key);
-                return;
-            }
-            
-            // Check for blocked game
-            if (isGameBlocked()) {
-                endGame(determineBlockedGameWinner());
-                return;
-            }
-            
-            // Switch turns
-            if (gameState.mode === 'single') {
-                if (gameState.currentTurn === gameState.playerId) {
-                    startTurn('ai');
-                } else {
-                    startTurn(gameState.playerId);
-                }
-            } else {
-                if (gameState.currentTurn === gameState.playerId) {
-                    startTurn(gameState.opponentRef.key);
-                } else {
-                    startTurn(gameState.playerId);
-                }
+            for (const zombieId in gameState.zombies) {
+                const zombie = gameState.zombies[zombieId];
+                const zombieElement = document.createElement('div');
+                zombieElement.className = 'zombie';
+                zombieElement.style.left = `${zombie.position.x - 15}px`;
+                zombieElement.style.top = `${zombie.position.y - 15}px`;
+                zombieElement.id = `zombie-${zombieId}`;
+                elements.zombiesContainer.appendChild(zombieElement);
             }
         }
 
-        // Check if game is blocked (no more moves possible)
-        function isGameBlocked() {
-            if (gameState.boneyard.length > 0) return false;
+        // تحديث الموارد على الشاشة
+        function updateResourcesOnScreen() {
+            elements.resourcesContainer.innerHTML = '';
             
-            // Check if current player has any playable dominoes
-            if (gameState.currentTurn === gameState.playerId) {
-                return !hasPlayableDomino(gameState.playerHand);
-            } else {
-                return !hasPlayableDomino(gameState.opponentHand);
+            for (const resourceId in gameState.resources) {
+                const resource = gameState.resources[resourceId];
+                const resourceElement = document.createElement('div');
+                resourceElement.className = 'resource';
+                resourceElement.style.left = `${resource.position.x - 10}px`;
+                resourceElement.style.top = `${resource.position.y - 10}px`;
+                resourceElement.id = `resource-${resourceId}`;
+                elements.resourcesContainer.appendChild(resourceElement);
             }
         }
 
-        // Check if hand has any playable dominoes
-        function hasPlayableDomino(hand) {
-            if (gameState.tableDominos.length === 0) return true;
+        // توليد الزومبي
+        function spawnZombies(count) {
+            const zombies = {};
+            const mapWidth = elements.gameMap.offsetWidth;
+            const mapHeight = elements.gameMap.offsetHeight;
             
-            const leftEnd = gameState.tableDominos[0].top;
-            const rightEnd = gameState.tableDominos[gameState.tableDominos.length - 1].bottom;
-            
-            for (const domino of hand) {
-                if (domino.top === leftEnd || domino.bottom === leftEnd || 
-                    domino.top === rightEnd || domino.bottom === rightEnd) {
-                    return true;
-                }
-            }
-            
-            return false;
-        }
-
-        // Determine winner in a blocked game
-        function determineBlockedGameWinner() {
-            const playerScore = calculateHandScore(gameState.playerHand);
-            const opponentScore = calculateHandScore(gameState.opponentHand);
-            
-            if (playerScore < opponentScore) {
-                return gameState.playerId;
-            } else if (opponentScore < playerScore) {
-                return gameState.mode === 'single' ? 'ai' : gameState.opponentRef.key;
-            } else {
-                return 'draw';
-            }
-        }
-
-        // Calculate score for a hand
-        function calculateHandScore(hand) {
-            return hand.reduce((sum, domino) => sum + domino.top + domino.bottom, 0);
-        }
-
-        // End the game
-        function endGame(winner) {
-            gameState.gameEnded = true;
-            
-            // Update scores
-            if (winner === gameState.playerId) {
-                gameState.playerScore += calculateHandScore(gameState.opponentHand);
-                showMessage('You win!', 3000);
-            } else if (winner === 'ai' || winner === gameState.opponentRef.key) {
-                gameState.opponentScore += calculateHandScore(gameState.playerHand);
-                showMessage(winner === 'ai' ? 'AI wins!' : 'Opponent wins!', 3000);
-            } else {
-                showMessage('Game ended in a draw!', 3000);
-            }
-            
-            // Update Firebase
-            if (gameState.mode === 'multi') {
-                gameState.playerRef.update({
-                    score: gameState.playerScore
-                });
+            for (let i = 0; i < count; i++) {
+                const zombieId = 'zombie_' + Date.now() + '_' + i;
+                let x, y;
                 
-                gameState.gameRef.update({
-                    gameEnded: true,
-                    winner: winner,
-                    gameStatus: winner === gameState.playerId ? 'You win!' : 
-                               winner === gameState.opponentRef.key ? 'Opponent wins!' : 'Game ended in a draw!'
-                });
-            } else {
-                updateScoresDisplay();
-            }
-            
-            // Show restart option after delay
-            setTimeout(() => {
-                if (confirm('Game over. Would you like to play again?')) {
-                    restartGame();
+                // وضع الزومبي على حواف الخريطة
+                if (Math.random() < 0.5) {
+                    x = Math.random() < 0.5 ? 0 : mapWidth;
+                    y = Math.random() * mapHeight;
                 } else {
-                    leaveGame();
-                }
-            }, 3000);
-        }
-
-        // Restart the game
-        function restartGame() {
-            if (gameState.mode === 'single') {
-                startSinglePlayerGame();
-            } else {
-                // In multiplayer, host needs to restart
-                if (gameState.isHost) {
-                    gameState.gameRef.update({
-                        status: 'playing',
-                        gameStarted: true,
-                        gameEnded: false,
-                        tableDominos: [],
-                        boneyard: [],
-                        currentTurn: null,
-                        gameStatus: 'Game restarted'
-                    }).then(() => {
-                        initializeGame();
-                        dealDominos();
-                        determineFirstPlayer();
-                    });
-                } else {
-                    showMessage('Waiting for host to restart the game...');
-                }
-            }
-        }
-
-        // Leave the game
-        function leaveGame() {
-            if (gameState.mode === 'multi') {
-                if (gameState.playerRef) {
-                    gameState.playerRef.remove();
+                    x = Math.random() * mapWidth;
+                    y = Math.random() < 0.5 ? 0 : mapHeight;
                 }
                 
-                if (gameState.isHost && gameState.gameRef) {
-                    gameState.gameRef.remove();
-                }
+                zombies[zombieId] = {
+                    position: { x, y },
+                    target: 'shelter', // أو 'player'
+                    speed: 1 + Math.random() * 1,
+                    health: 3
+                };
             }
             
-            // Reset game state
-            gameState.mode = null;
-            gameState.gameStarted = false;
-            gameState.gameEnded = false;
+            database.ref('zombies').update(zombies);
             
-            // Clear UI
-            elements.playerHand.innerHTML = '';
-            elements.opponentHand.innerHTML = '';
-            elements.dominoTable.innerHTML = '';
-            
-            // Show main menu
-            elements.mainMenu.classList.remove('hidden');
-            elements.modeMenu.classList.add('hidden');
-            elements.waitingMenu.classList.add('hidden');
-            elements.howToPlayMenu.classList.add('hidden');
+            // بدء حركة الزومبي
+            moveZombies();
         }
 
-        // Draw from boneyard
-        function drawFromBoneyard() {
-            if (gameState.currentTurn !== gameState.playerId) return;
-            if (gameState.boneyard.length === 0) {
-                showMessage('Boneyard is empty!', 1000);
-                return;
-            }
+        // حركة الزومبي
+        function moveZombies() {
+            if (gameState.gameData.dayNightCycle !== 'night') return;
             
-            // Draw a domino
-            const domino = gameState.boneyard.pop();
-            gameState.playerHand.push(domino);
-            
-            // Update Firebase
-            if (gameState.mode === 'multi') {
-                gameState.playerRef.update({
-                    hand: gameState.playerHand
-                });
-                
-                gameState.gameRef.update({
-                    boneyard: gameState.boneyard
-                });
-            }
-            
-            // Update UI
-            updatePlayerHandDisplay();
-            updateBoneyardDisplay();
-            
-            // Check if the drawn domino can be played
-            const leftEnd = gameState.tableDominos.length > 0 ? gameState.tableDominos[0].top : null;
-            const rightEnd = gameState.tableDominos.length > 0 ? gameState.tableDominos[gameState.tableDominos.length - 1].bottom : null;
-            
-            const canPlay = !leftEnd || 
-                           domino.top === leftEnd || domino.bottom === leftEnd || 
-                           domino.top === rightEnd || domino.bottom === rightEnd;
-            
-            if (canPlay) {
-                showMessage('You can now play the drawn domino', 1000);
-                highlightPlayableDominos();
-            } else {
-                showMessage('Drawn domino cannot be played', 1000);
-                passTurn();
-            }
-        }
-
-        // Pass turn
-        function passTurn() {
-            if (gameState.currentTurn !== gameState.playerId) return;
-            if (gameState.boneyard.length > 0 && hasPlayableDomino(gameState.playerHand)) {
-                showMessage('You have playable dominoes!', 1000);
-                return;
-            }
-            
-            showMessage('You passed your turn', 1000);
-            endTurn();
-        }
-
-        // Rotate selected domino
-        function rotateSelectedDomino() {
-            if (!gameState.selectedDomino) return;
-            
-            const dominoIndex = gameState.playerHand.findIndex(d => 
-                d.top === gameState.selectedDomino.top && d.bottom === gameState.selectedDomino.bottom);
-            
-            if (dominoIndex >= 0) {
-                // Rotate the domino (swap top and bottom)
-                gameState.playerHand[dominoIndex] = {
-                    top: gameState.selectedDomino.bottom,
-                    bottom: gameState.selectedDomino.top
+            for (const zombieId in gameState.zombies) {
+                const zombie = gameState.zombies[zombieId];
+                const shelterPos = {
+                    x: elements.shelter.offsetLeft + elements.shelter.offsetWidth / 2,
+                    y: elements.shelter.offsetTop + elements.shelter.offsetHeight / 2
                 };
                 
-                gameState.selectedDomino = gameState.playerHand[dominoIndex];
+                // حساب الاتجاه نحو الملجأ
+                const dx = shelterPos.x - zombie.position.x;
+                const dy = shelterPos.y - zombie.position.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
                 
-                // Update Firebase
-                if (gameState.mode === 'multi') {
-                    gameState.playerRef.update({
-                        hand: gameState.playerHand
+                if (distance > 10) {
+                    const speed = zombie.speed || 1;
+                    const newX = zombie.position.x + (dx / distance) * speed;
+                    const newY = zombie.position.y + (dy / distance) * speed;
+                    
+                    database.ref(`zombies/${zombieId}/position`).set({
+                        x: newX,
+                        y: newY
                     });
                 }
-                
-                // Update UI
-                updatePlayerHandDisplay();
-                highlightPlayableDominos();
+            }
+            
+            if (!gameState.gameData.gameOver) {
+                setTimeout(moveZombies, 100);
             }
         }
 
-        // Select a domino
-        function selectDomino(domino) {
-            // Deselect if already selected
-            if (gameState.selectedDomino && 
-                gameState.selectedDomino.top === domino.top && 
-                gameState.selectedDomino.bottom === domino.bottom) {
-                deselectDomino();
-                return;
-            }
-            
-            gameState.selectedDomino = domino;
-            updatePlayerHandDisplay();
-            highlightPlayableDominos();
+        // توليد موارد أولية
+        function spawnInitialResources() {
+            spawnResources(10);
         }
 
-        // Deselect domino
-        function deselectDomino() {
-            gameState.selectedDomino = null;
-            updatePlayerHandDisplay();
+        // توليد موارد
+        function spawnResources(count) {
+            const resources = {};
+            const mapWidth = elements.gameMap.offsetWidth;
+            const mapHeight = elements.gameMap.offsetHeight;
+            
+            for (let i = 0; i < count; i++) {
+                const resourceId = 'resource_' + Date.now() + '_' + i;
+                const x = 50 + Math.random() * (mapWidth - 100);
+                const y = 50 + Math.random() * (mapHeight - 100);
+                
+                resources[resourceId] = {
+                    position: { x, y },
+                    value: 1
+                };
+            }
+            
+            database.ref('resources').update(resources);
         }
 
-        // Highlight playable dominos
-        function highlightPlayableDominos() {
-            if (!gameState.selectedDomino || gameState.currentTurn !== gameState.playerId) return;
+        // جمع الموارد
+        function collectResources() {
+            if (gameState.isCollecting) return;
+            gameState.isCollecting = true;
             
-            const leftEnd = gameState.tableDominos.length > 0 ? gameState.tableDominos[0].top : null;
-            const rightEnd = gameState.tableDominos.length > 0 ? gameState.tableDominos[gameState.tableDominos.length - 1].bottom : null;
+            const player = gameState.players[gameState.playerId];
+            if (!player) return;
             
-            // Check if selected domino can be played
-            const canPlayLeft = !leftEnd || 
-                              gameState.selectedDomino.bottom === leftEnd || 
-                              gameState.selectedDomino.top === leftEnd;
+            let collected = false;
             
-            const canPlayRight = !rightEnd || 
-                               gameState.selectedDomino.top === rightEnd || 
-                               gameState.selectedDomino.bottom === rightEnd;
-            
-            if (leftEnd !== null || rightEnd !== null) {
-                if (!canPlayLeft && !canPlayRight) {
-                    showMessage('This domino cannot be played', 1000);
-                }
-            }
-        }
-
-        // Place a domino on the table
-        function placeDomino(domino, isHorizontal) {
-            if (gameState.currentTurn !== gameState.playerId) return;
-            
-            const dominoIndex = gameState.playerHand.findIndex(d => 
-                d.top === domino.top && d.bottom === domino.bottom);
-            
-            if (dominoIndex < 0) return;
-            
-            // Check if this is the first domino
-            if (gameState.tableDominos.length === 0) {
-                // First domino must be a double
-                if (domino.top !== domino.bottom) {
-                    showMessage('First domino must be a double!', 1000);
-                    return;
-                }
+            for (const resourceId in gameState.resources) {
+                const resource = gameState.resources[resourceId];
+                const distance = getDistance(player.position, resource.position);
                 
-                // Place the domino
-                gameState.tableDominos.push(domino);
-                gameState.playerHand.splice(dominoIndex, 1);
-                gameState.lastPlacedDomino = domino;
-                
-                // Update Firebase
-                if (gameState.mode === 'multi') {
-                    gameState.playerRef.update({
-                        hand: gameState.playerHand
-                    });
+                if (distance < gameState.collectionRange) {
+                    // زيادة موارد اللاعب
+                    const newResources = (player.resources || 0) + resource.value;
+                    gameState.playerRef.update({ resources: newResources });
                     
-                    gameState.gameRef.update({
-                        tableDominos: gameState.tableDominos
-                    });
-                }
-                
-                // Update UI
-                updatePlayerHandDisplay();
-                updateTableDisplay();
-                deselectDomino();
-                
-                // End turn
-                endTurn();
-                return;
-            }
-            
-            // Check if domino can be placed
-            const leftEnd = gameState.tableDominos[0].top;
-            const rightEnd = gameState.tableDominos[gameState.tableDominos.length - 1].bottom;
-            
-            let canPlaceLeft = false;
-            let canPlaceRight = false;
-            
-            // Check left side
-            if (domino.bottom === leftEnd || domino.top === leftEnd) {
-                canPlaceLeft = true;
-            }
-            
-            // Check right side
-            if (domino.top === rightEnd || domino.bottom === rightEnd) {
-                canPlaceRight = true;
-            }
-            
-            if (!canPlaceLeft && !canPlaceRight) {
-                showMessage('Domino does not match ends!', 1000);
-                return;
-            }
-            
-            // Determine placement (left or right)
-            let placeOnLeft = canPlaceLeft;
-            if (canPlaceLeft && canPlaceRight) {
-                // If both sides match, use the isHorizontal flag to decide
-                placeOnLeft = !isHorizontal;
-            }
-            
-            // Rotate domino if needed
-            let rotatedDomino = { ...domino };
-            if (placeOnLeft) {
-                if (domino.bottom !== leftEnd) {
-                    rotatedDomino = { top: domino.bottom, bottom: domino.top };
-                }
-            } else {
-                if (domino.top !== rightEnd) {
-                    rotatedDomino = { top: domino.bottom, bottom: domino.top };
-                }
-            }
-            
-            // Place the domino
-            if (placeOnLeft) {
-                gameState.tableDominos.unshift(rotatedDomino);
-            } else {
-                gameState.tableDominos.push(rotatedDomino);
-            }
-            
-            gameState.playerHand.splice(dominoIndex, 1);
-            gameState.lastPlacedDomino = rotatedDomino;
-            
-            // Update Firebase
-            if (gameState.mode === 'multi') {
-                gameState.playerRef.update({
-                    hand: gameState.playerHand
-                });
-                
-                gameState.gameRef.update({
-                    tableDominos: gameState.tableDominos
-                });
-            }
-            
-            // Update UI
-            updatePlayerHandDisplay();
-            updateTableDisplay();
-            deselectDomino();
-            
-            // End turn
-            endTurn();
-        }
-
-        // AI make a move
-        function aiMakeMove() {
-            if (gameState.currentTurn !== 'ai') return;
-            
-            // Find all playable dominoes
-            const playableDominos = [];
-            const leftEnd = gameState.tableDominos.length > 0 ? gameState.tableDominos[0].top : null;
-            const rightEnd = gameState.tableDominos.length > 0 ? gameState.tableDominos[gameState.tableDominos.length - 1].bottom : null;
-            
-            gameState.opponentHand.forEach(domino => {
-                if (!leftEnd || domino.bottom === leftEnd || domino.top === leftEnd || 
-                    domino.top === rightEnd || domino.bottom === rightEnd) {
-                    playableDominos.push(domino);
-                }
-            });
-            
-            if (playableDominos.length > 0) {
-                // AI logic based on difficulty
-                let selectedDomino;
-                let placeOnLeft;
-                
-                if (gameState.aiDifficulty === 'easy') {
-                    // Easy AI - random move
-                    selectedDomino = playableDominos[Math.floor(Math.random() * playableDominos.length)];
+                    // إزالة المورد
+                    database.ref(`resources/${resourceId}`).remove();
                     
-                    // Randomly decide to place on left or right if both options available
-                    const canPlaceLeft = leftEnd && (selectedDomino.bottom === leftEnd || selectedDomino.top === leftEnd);
-                    const canPlaceRight = rightEnd && (selectedDomino.top === rightEnd || selectedDomino.bottom === rightEnd);
-                    
-                    if (canPlaceLeft && canPlaceRight) {
-                        placeOnLeft = Math.random() < 0.5;
-                    } else {
-                        placeOnLeft = canPlaceLeft;
-                    }
-                } else if (gameState.aiDifficulty === 'medium') {
-                    // Medium AI - prefers to play doubles and higher scoring dominoes
-                    // First look for doubles
-                    const doubles = playableDominos.filter(d => d.top === d.bottom);
-                    
-                    if (doubles.length > 0) {
-                        // Play the highest double
-                        selectedDomino = doubles.reduce((max, d) => (d.top > max.top ? d : max), doubles[0]);
-                    } else {
-                        // Play the domino with highest total value
-                        selectedDomino = playableDominos.reduce((max, d) => 
-                            ((d.top + d.bottom) > (max.top + max.bottom) ? d : max, playableDominos[0]);
-                    }
-                    
-                    // Decide placement based on strategy
-                    const canPlaceLeft = leftEnd && (selectedDomino.bottom === leftEnd || selectedDomino.top === leftEnd);
-                    const canPlaceRight = rightEnd && (selectedDomino.top === rightEnd || selectedDomino.bottom === rightEnd);
-                    
-                    if (canPlaceLeft && canPlaceRight) {
-                        // Prefer to place on the side that would leave more options
-                        placeOnLeft = Math.random() < 0.5; // Still somewhat random
-                    } else {
-                        placeOnLeft = canPlaceLeft;
-                    }
-                } else {
-                    // Hard AI - more advanced strategy
-                    // This could be enhanced further with more complex logic
-                    
-                    // First look for doubles
-                    const doubles = playableDominos.filter(d => d.top === d.bottom);
-                    
-                    if (doubles.length > 0) {
-                        // Play the highest double
-                        selectedDomino = doubles.reduce((max, d) => (d.top > max.top ? d : max), doubles[0]);
-                    } else {
-                        // Try to play dominoes that would limit opponent's options
-                        // This is a simplified version - a real hard AI would be more sophisticated
-                        
-                        // Count remaining dominoes of each number
-                        const numberCounts = Array(7).fill(0);
-                        gameState.opponentHand.forEach(d => {
-                            numberCounts[d.top]++;
-                            if (d.top !== d.bottom) numberCounts[d.bottom]++;
-                        });
-                        
-                        // Find domino that would play a number with few remaining in hand
-                        selectedDomino = playableDominos.reduce((best, d) => {
-                            const leftScore = leftEnd ? numberCounts[d.top === leftEnd ? d.bottom : d.top] : 0;
-                            const rightScore = rightEnd ? numberCounts[d.bottom === rightEnd ? d.top : d.bottom] : 0;
-                            
-                            const currentBestScore = leftEnd ? 
-                                numberCounts[best.top === leftEnd ? best.bottom : best.top] : 
-                                numberCounts[best.bottom === rightEnd ? best.top : best.bottom];
-                            
-                            const currentScore = leftEnd ? leftScore : rightScore;
-                            
-                            return currentScore < currentBestScore ? d : best;
-                        }, playableDominos[0]);
-                    }
-                    
-                    // Decide placement based on strategy
-                    const canPlaceLeft = leftEnd && (selectedDomino.bottom === leftEnd || selectedDomino.top === leftEnd);
-                    const canPlaceRight = rightEnd && (selectedDomino.top === rightEnd || selectedDomino.bottom === rightEnd);
-                    
-                    if (canPlaceLeft && canPlaceRight) {
-                        // Try to play on the side that would be more advantageous
-                        // This is simplified - a real AI would analyze more deeply
-                        placeOnLeft = Math.random() < 0.5;
-                    } else {
-                        placeOnLeft = canPlaceLeft;
-                    }
-                }
-                
-                // Rotate domino if needed
-                let rotatedDomino = { ...selectedDomino };
-                if (placeOnLeft) {
-                    if (selectedDomino.bottom !== leftEnd) {
-                        rotatedDomino = { top: selectedDomino.bottom, bottom: selectedDomino.top };
-                    }
-                } else {
-                    if (selectedDomino.top !== rightEnd) {
-                        rotatedDomino = { top: selectedDomino.bottom, bottom: selectedDomino.top };
-                    }
-                }
-                
-                // Remove from hand
-                const dominoIndex = gameState.opponentHand.findIndex(d => 
-                    d.top === selectedDomino.top && d.bottom === selectedDomino.bottom);
-                
-                if (dominoIndex >= 0) {
-                    gameState.opponentHand.splice(dominoIndex, 1);
-                    
-                    // Update Firebase
-                    if (gameState.mode === 'multi') {
-                        gameState.opponentRef.update({
-                            hand: gameState.opponentHand
-                        });
-                    }
-                    
-                    // Add to table
-                    if (placeOnLeft) {
-                        gameState.tableDominos.unshift(rotatedDomino);
-                    } else {
-                        gameState.tableDominos.push(rotatedDomino);
-                    }
-                    
-                    gameState.lastPlacedDomino = rotatedDomino;
-                    
-                    // Update Firebase
-                    if (gameState.mode === 'multi') {
-                        gameState.gameRef.update({
-                            tableDominos: gameState.tableDominos
-                        });
-                    }
-                    
-                    // Update UI
-                    updateOpponentHandDisplay();
-                    updateTableDisplay();
-                    
-                    // End turn
-                    endTurn();
-                }
-            } else {
-                // No playable dominoes - draw from boneyard or pass
-                if (gameState.boneyard.length > 0) {
-                    // Draw a domino
-                    const domino = gameState.boneyard.pop();
-                    gameState.opponentHand.push(domino);
-                    
-                    // Update Firebase
-                    if (gameState.mode === 'multi') {
-                        gameState.opponentRef.update({
-                            hand: gameState.opponentHand
-                        });
-                        
-                        gameState.gameRef.update({
-                            boneyard: gameState.boneyard
-                        });
-                    }
-                    
-                    // Update UI
-                    updateOpponentHandDisplay();
-                    updateBoneyardDisplay();
-                    
-                    // Check if the drawn domino can be played
-                    const canPlay = !leftEnd || 
-                                   domino.top === leftEnd || domino.bottom === leftEnd || 
-                                   domino.top === rightEnd || domino.bottom === rightEnd;
-                    
-                    if (canPlay) {
-                        // Play it immediately
+                    // تأثير مرئي
+                    const resourceElement = document.getElementById(`resource-${resourceId}`);
+                    if (resourceElement) {
+                        resourceElement.style.transform = 'scale(1.5)';
+                        resourceElement.style.opacity = '0';
                         setTimeout(() => {
-                            aiMakeMove();
-                        }, 1000);
-                    } else {
-                        // Pass turn
-                        setTimeout(() => {
-                            endTurn();
-                        }, 1000);
+                            resourceElement.remove();
+                        }, 300);
                     }
-                } else {
-                    // Pass turn
+                    
+                    collected = true;
+                    break;
+                }
+            }
+            
+            if (collected) {
+                elements.player.style.transform = 'scale(1.2)';
+                setTimeout(() => {
+                    elements.player.style.transform = 'scale(1)';
+                }, 200);
+            } else {
+                showMessage('لا توجد موارد قريبة!', 1000);
+            }
+            
+            setTimeout(() => {
+                gameState.isCollecting = false;
+            }, 500);
+        }
+
+        // تحسين الملجأ
+        function upgradeShelter() {
+            const player = gameState.players[gameState.playerId];
+            if (!player) return;
+            
+            const requiredResources = 10 * gameState.gameData.shelterLevel;
+            
+            if (player.resources >= requiredResources) {
+                // خصم الموارد
+                const newResources = player.resources - requiredResources;
+                gameState.playerRef.update({ resources: newResources });
+                
+                // تحسين الملجأ
+                gameState.gameRef.transaction((current) => {
+                    if (!current) return;
+                    
+                    current.shelterHealth = Math.min(100, current.shelterHealth + 20);
+                    current.shelterLevel++;
+                    
+                    // تأثير مرئي
+                    elements.shelter.style.transform = 'scale(1.1)';
                     setTimeout(() => {
-                        endTurn();
-                    }, 1000);
-                }
-            }
-        }
-
-        // Update player hand display
-        function updatePlayerHandDisplay() {
-            elements.playerHand.innerHTML = '';
-            
-            gameState.playerHand.forEach((domino, index) => {
-                const dominoElement = document.createElement('div');
-                dominoElement.className = 'domino';
-                
-                if (gameState.selectedDomino && 
-                    gameState.selectedDomino.top === domino.top && 
-                    gameState.selectedDomino.bottom === domino.bottom) {
-                    dominoElement.classList.add('selected');
-                }
-                
-                // Check if this domino is playable
-                if (gameState.currentTurn === gameState.playerId) {
-                    const leftEnd = gameState.tableDominos.length > 0 ? gameState.tableDominos[0].top : null;
-                    const rightEnd = gameState.tableDominos.length > 0 ? gameState.tableDominos[gameState.tableDominos.length - 1].bottom : null;
+                        elements.shelter.style.transform = 'scale(1)';
+                    }, 300);
                     
-                    const canPlayLeft = !leftEnd || domino.bottom === leftEnd || domino.top === leftEnd;
-                    const canPlayRight = !rightEnd || domino.top === rightEnd || domino.bottom === rightEnd;
+                    showMessage('تم تحسين الملجأ!', 1500);
                     
-                    if (canPlayLeft || canPlayRight) {
-                        dominoElement.classList.add('placeable');
-                    }
-                }
-                
-                const topValue = document.createElement('div');
-                topValue.className = `domino-value top dots-${domino.top}`;
-                
-                const bottomValue = document.createElement('div');
-                bottomValue.className = `domino-value bottom dots-${domino.bottom}`;
-                
-                dominoElement.appendChild(topValue);
-                dominoElement.appendChild(bottomValue);
-                
-                dominoElement.addEventListener('click', () => {
-                    if (gameState.currentTurn === gameState.playerId) {
-                        selectDomino(domino);
-                    }
+                    return current;
                 });
-                
-                // Double click to place
-                dominoElement.addEventListener('dblclick', () => {
-                    if (gameState.currentTurn === gameState.playerId && gameState.selectedDomino) {
-                        placeDomino(domino, gameState.isRotated);
-                    }
-                });
-                
-                elements.playerHand.appendChild(dominoElement);
-            });
-        }
-
-        // Update opponent hand display
-        function updateOpponentHandDisplay() {
-            elements.opponentHand.innerHTML = '';
-            
-            for (let i = 0; i < gameState.opponentHand.length; i++) {
-                const dominoElement = document.createElement('div');
-                dominoElement.className = 'domino';
-                dominoElement.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-                
-                // Show back of domino for opponent
-                const dominoBack = document.createElement('div');
-                dominoBack.style.width = '100%';
-                dominoBack.style.height = '100%';
-                dominoBack.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
-                dominoBack.style.borderRadius = '5px';
-                
-                dominoElement.appendChild(dominoBack);
-                elements.opponentHand.appendChild(dominoElement);
-            }
-        }
-
-        // Update table display
-        function updateTableDisplay() {
-            elements.dominoTable.innerHTML = '';
-            
-            if (gameState.tableDominos.length === 0) return;
-            
-            // Calculate positions for dominoes
-            const centerX = elements.dominoTable.offsetWidth / 2;
-            const centerY = elements.dominoTable.offsetHeight / 2;
-            
-            // Place first domino in center
-            const firstDomino = gameState.tableDominos[0];
-            const firstDominoElement = createDominoElement(firstDomino, false);
-            firstDominoElement.style.position = 'absolute';
-            firstDominoElement.style.left = `${centerX - 25}px`;
-            firstDominoElement.style.top = `${centerY - 50}px`;
-            elements.dominoTable.appendChild(firstDominoElement);
-            
-            // Place subsequent dominoes
-            let currentX = centerX;
-            let currentY = centerY;
-            let direction = 0; // 0: right, 1: down, 2: left, 3: up
-            
-            for (let i = 1; i < gameState.tableDominos.length; i++) {
-                const domino = gameState.tableDominos[i];
-                let isHorizontal = true;
-                
-                // Alternate direction for snake-like placement
-                if (i % 2 === 1) {
-                    direction = (direction + 1) % 4;
-                }
-                
-                // Calculate position based on direction
-                switch (direction) {
-                    case 0: // right
-                        currentX += 60;
-                        isHorizontal = false;
-                        break;
-                    case 1: // down
-                        currentY += 60;
-                        isHorizontal = true;
-                        break;
-                    case 2: // left
-                        currentX -= 60;
-                        isHorizontal = false;
-                        break;
-                    case 3: // up
-                        currentY -= 60;
-                        isHorizontal = true;
-                        break;
-                }
-                
-                const dominoElement = createDominoElement(domino, isHorizontal);
-                dominoElement.style.position = 'absolute';
-                
-                if (isHorizontal) {
-                    dominoElement.style.left = `${currentX - 50}px`;
-                    dominoElement.style.top = `${currentY - 25}px`;
-                } else {
-                    dominoElement.style.left = `${currentX - 25}px`;
-                    dominoElement.style.top = `${currentY - 50}px`;
-                }
-                
-                elements.dominoTable.appendChild(dominoElement);
-            }
-        }
-
-        // Create a domino element for the table
-        function createDominoElement(domino, isHorizontal) {
-            const dominoElement = document.createElement('div');
-            dominoElement.className = `domino-on-table ${isHorizontal ? 'horizontal' : ''}`;
-            
-            const topValue = document.createElement('div');
-            topValue.className = `domino-value top dots-${domino.top}`;
-            
-            const bottomValue = document.createElement('div');
-            bottomValue.className = `domino-value bottom dots-${domino.bottom}`;
-            
-            if (isHorizontal) {
-                dominoElement.appendChild(topValue);
-                dominoElement.appendChild(bottomValue);
             } else {
-                dominoElement.appendChild(topValue);
-                dominoElement.appendChild(bottomValue);
+                showMessage('موارد غير كافية!', 1000);
             }
+        }
+
+        // التحقق من تصادمات الزومبي
+        function checkZombieCollisions() {
+            if (gameState.gameData.dayNightCycle !== 'night') return;
             
-            // Add animation for newly placed domino
-            if (gameState.lastPlacedDomino && 
-                gameState.lastPlacedDomino.top === domino.top && 
-                gameState.lastPlacedDomino.bottom === domino.bottom) {
-                dominoElement.classList.add('domino-place');
+            const shelterPos = {
+                x: elements.shelter.offsetLeft + elements.shelter.offsetWidth / 2,
+                y: elements.shelter.offsetTop + elements.shelter.offsetHeight / 2
+            };
+            
+            for (const zombieId in gameState.zombies) {
+                const zombie = gameState.zombies[zombieId];
+                const distance = getDistance(zombie.position, shelterPos);
+                
+                if (distance < 50) {
+                    // الزومبي يهاجم الملجأ
+                    gameState.gameRef.transaction((current) => {
+                        if (!current) return;
+                        
+                        current.shelterHealth = Math.max(0, current.shelterHealth - 1);
+                        
+                        // إزالة الزومبي إذا وصل للملجأ
+                        if (distance < 30) {
+                            database.ref(`zombies/${zombieId}`).remove();
+                        }
+                        
+                        return current;
+                    });
+                }
             }
+        }
+
+        // التحقق من جمع الموارد
+        function checkResourceCollection() {
+            if (!gameState.isCollecting) return;
             
-            return dominoElement;
+            const player = gameState.players[gameState.playerId];
+            if (!player) return;
+            
+            for (const resourceId in gameState.resources) {
+                const resource = gameState.resources[resourceId];
+                const distance = getDistance(player.position, resource.position);
+                
+                if (distance < gameState.collectionRange) {
+                    collectResources();
+                    break;
+                }
+            }
         }
 
-        // Update boneyard display
-        function updateBoneyardDisplay() {
-            elements.boneyardCount.textContent = gameState.boneyard.length;
+        // معالجة ضغطات المفاتيح
+        function handleKeyDown(e) {
+            switch(e.key) {
+                case 'ArrowUp':
+                case 'w':
+                    gameState.controls.up = true;
+                    break;
+                case 'ArrowDown':
+                case 's':
+                    gameState.controls.down = true;
+                    break;
+                case 'ArrowLeft':
+                case 'a':
+                    gameState.controls.left = true;
+                    break;
+                case 'ArrowRight':
+                case 'd':
+                    gameState.controls.right = true;
+                    break;
+            }
+        }
+        function handleKeyUp(e) {
+            switch(e.key) {
+                case 'ArrowUp':
+                case 'w':
+                    gameState.controls.up = false;
+                    break;
+                case 'ArrowDown':
+                case 's':
+                    gameState.controls.down = false;
+                    break;
+                case 'ArrowLeft':
+                case 'a':
+                    gameState.controls.left = false;
+                    break;
+                case 'ArrowRight':
+                case 'd':
+                    gameState.controls.right = false;
+                    break;
+            }
         }
 
-        // Update scores display
-        function updateScoresDisplay() {
-            elements.playerScore.textContent = `You: ${gameState.playerScore}`;
-            elements.opponentScore.textContent = `Opp: ${gameState.opponentScore}`;
+        // حساب المسافة بين نقطتين
+        function getDistance(pos1, pos2) {
+            const dx = pos1.x - pos2.x;
+            const dy = pos1.y - pos2.y;
+            return Math.sqrt(dx * dx + dy * dy);
         }
 
-        // Show message
+        // عرض رسالة
         function showMessage(message, duration = 2000) {
             elements.gameMessage.textContent = message;
             elements.gameMessage.classList.add('show');
@@ -2071,16 +1079,98 @@
             }
         }
 
-        // Utility function to shuffle array
-        function shuffleArray(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
+        // إنهاء اللعبة
+        function endGame() {
+            gameState.gameData.gameOver = true;
+            gameState.gameRef.update({ gameOver: true });
+            
+            // حساب النقاط النهائية
+            const playerScore = gameState.players[gameState.playerId]?.resources || 0;
+            const survivedWaves = gameState.gameData.wave;
+            
+            showMessage(`انتهت اللعبة! نجوت من ${survivedWaves} موجات وجمعت ${playerScore} موارد`, 5000);
+            
+            // إعادة تعيين اللعبة بعد 5 ثوان
+            setTimeout(() => {
+                resetGame();
+            }, 5000);
         }
 
-        // Initialize the game when page loads
-        window.addEventListener('DOMContentLoaded', initGame);
+        // إعادة تعيين اللعبة
+        function resetGame() {
+            // إزالة جميع البيانات من Firebase
+            database.ref('players').remove();
+            database.ref('zombies').remove();
+            database.ref('resources').remove();
+            gameState.gameRef.update({
+                dayNightCycle: 'day',
+                timeLeft: 120,
+                shelterHealth: 100,
+                shelterLevel: 1,
+                wave: 0,
+                gameOver: false
+            });
+            
+            // إعادة تعيين حالة اللعبة
+            gameState.players = {};
+            gameState.zombies = {};
+            gameState.resources = {};
+            gameState.gameData.gameOver = false;
+            
+            // إعادة عرض شاشة الدخول
+            elements.loginScreen.classList.remove('hidden');
+            elements.playerNameInput.value = gameState.playerName;
+        }
+
+        // تهيئة التحكم للهاتف
+        function setupMobileControls() {
+            // التحكم لأعلى
+            elements.mobileUp.addEventListener('touchstart', () => {
+                gameState.controls.up = true;
+            });
+            elements.mobileUp.addEventListener('touchend', () => {
+                gameState.controls.up = false;
+            });
+            
+            // التحكم لأسفل
+            elements.mobileDown.addEventListener('touchstart', () => {
+                gameState.controls.down = true;
+            });
+            elements.mobileDown.addEventListener('touchend', () => {
+                gameState.controls.down = false;
+            });
+            
+            // التحكم لليسار
+            elements.mobileLeft.addEventListener('touchstart', () => {
+                gameState.controls.left = true;
+            });
+            elements.mobileLeft.addEventListener('touchend', () => {
+                gameState.controls.left = false;
+            });
+            
+            // التحكم لليمين
+            elements.mobileRight.addEventListener('touchstart', () => {
+                gameState.controls.right = true;
+            });
+            elements.mobileRight.addEventListener('touchend', () => {
+                gameState.controls.right = false;
+            });
+        }
+
+        // بدء اللعبة عند تحميل الصفحة
+        window.addEventListener('DOMContentLoaded', () => {
+            setupEventListeners();
+            setupMobileControls();
+            
+            // تهيئة Firebase
+            auth.signInAnonymously()
+                .then(() => {
+                    console.log('تم الاتصال بنجاح');
+                })
+                .catch(error => {
+                    showMessage(`خطأ في الاتصال: ${error.message}`);
+                });
+        });
     </script>
 </body>
 </html>
