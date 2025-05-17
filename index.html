@@ -440,31 +440,15 @@
     </div>
 
     <script>
-        // Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyBhfwAVPZFwjCu6-fJG03Md2ZHzd8-Go_Q",
-            authDomain: "cyber-f4ff8.firebaseapp.com",
-            databaseURL: "https://cyber-f4ff8-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "cyber-f4ff8",
-            storageBucket: "cyber-f4ff8.firebasestorage.app",
-            messagingSenderId: "681788710263",
-            appId: "1:681788710263:web:960645ecbff2a2f0051572"
-        };
-
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
-        const auth = firebase.auth();
-
         // حالة اللعبة
         const gameState = {
             playerId: null,
             playerName: '',
-            playerRef: null,
-            gameRef: null,
-            players: {},
-            zombies: {},
-            resources: {},
+            position: { x: 300, y: 300 },
+            resources: 0,
+            role: 'جامع موارد',
+            zombies: [],
+            resourcesList: [],
             gameData: {
                 dayNightCycle: 'day',
                 timeLeft: 120,
@@ -511,52 +495,22 @@
             mobileDown: document.getElementById('mobile-down')
         };
 
-        // تهيئة اللعبة
-        function initGame() {
-            // تسجيل الدخول المجهول
-            auth.signInAnonymously()
-                .then(() => {
-                    // بدء اللعبة بعد تسجيل الدخول
-                    startGame();
-                })
-                .catch(error => {
-                    showMessage(`خطأ في الاتصال: ${error.message}`);
-                });
-        }
-
         // بدء اللعبة
         function startGame() {
             gameState.playerName = elements.playerNameInput.value.trim() || 'لاعب' + Math.floor(Math.random() * 1000);
             
-            // إنشاء معرف فريد للاعب
-            gameState.playerId = 'player_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
-            
             // إخفاء شاشة الدخول
             elements.loginScreen.classList.add('hidden');
             
-            // تهيئة مراجع Firebase
-            gameState.gameRef = database.ref('game');
-            gameState.playerRef = database.ref(`players/${gameState.playerId}`);
-            
             // تعيين دور اللاعب عشوائياً
             const roles = ['جامع موارد', 'حارس', 'بناء'];
-            const playerRole = roles[Math.floor(Math.random() * roles.length)];
-            
-            // حفظ بيانات اللاعب
-            gameState.playerRef.set({
-                name: gameState.playerName,
-                role: playerRole,
-                resources: 0,
-                position: { x: 300, y: 300 },
-                lastActive: firebase.database.ServerValue.TIMESTAMP
-            });
+            gameState.role = roles[Math.floor(Math.random() * roles.length)];
             
             // تحديث عرض الدور
-            elements.roleDisplay.textContent = `الدور: ${playerRole}`;
+            elements.roleDisplay.textContent = `الدور: ${gameState.role}`;
             
             // تهيئة المستمعين
             setupEventListeners();
-            setupFirebaseListeners();
             setupGameLoop();
             
             // بدء دورة الليل والنهار
@@ -564,6 +518,9 @@
             
             // إنشاء موارد أولية
             spawnInitialResources();
+            
+            // تحديث موقع اللاعب الأولي
+            updatePlayerPosition();
         }
 
         // تهيئة مستمعي الأحداث
@@ -587,44 +544,9 @@
             elements.mobileDown.addEventListener('touchend', () => gameState.controls.down = false);
             
             // بدء اللعبة
-            elements.startBtn.addEventListener('click', initGame);
+            elements.startBtn.addEventListener('click', startGame);
             elements.playerNameInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') initGame();
-            });
-        }
-
-        // تهيئة مستمعي Firebase
-        function setupFirebaseListeners() {
-            // تحديث حالة اللعبة
-            gameState.gameRef.on('value', (snapshot) => {
-                const data = snapshot.val();
-                if (data) {
-                    gameState.gameData = data;
-                    updateGameUI();
-                    
-                    // توليد الزومبي في الليل
-                    if (data.dayNightCycle === 'night' && data.wave > 0 && Object.keys(gameState.zombies).length === 0) {
-                        spawnZombies(data.wave);
-                    }
-                }
-            });
-            
-            // تحديث اللاعبين
-            database.ref('players').on('value', (snapshot) => {
-                gameState.players = snapshot.val() || {};
-                updatePlayersOnScreen();
-            });
-            
-            // تحديث الزومبي
-            database.ref('zombies').on('value', (snapshot) => {
-                gameState.zombies = snapshot.val() || {};
-                updateZombiesOnScreen();
-            });
-            
-            // تحديث الموارد
-            database.ref('resources').on('value', (snapshot) => {
-                gameState.resources = snapshot.val() || {};
-                updateResourcesOnScreen();
+                if (e.key === 'Enter') startGame();
             });
         }
 
@@ -638,6 +560,7 @@
                     updatePlayerPosition();
                     checkResourceCollection();
                     checkZombieCollisions();
+                    moveZombies();
                     gameState.lastUpdate = timestamp;
                 }
                 
@@ -654,37 +577,40 @@
             setInterval(() => {
                 if (gameState.gameData.gameOver) return;
                 
-                gameState.gameRef.transaction((current) => {
-                    if (!current) return;
-                    
-                    // تقليل الوقت المتبقي
-                    current.timeLeft--;
-                    
-                    // تغيير الليل والنهار
-                    if (current.timeLeft <= 0) {
-                        if (current.dayNightCycle === 'day') {
-                            // بدء الليل وموجة زومبي جديدة
-                            current.dayNightCycle = 'night';
-                            current.timeLeft = 60; // 60 ثانية ليلاً
-                            current.wave++;
-                            
-                            // إظهار رسالة
-                            showMessage(`موجة الزومبي #${current.wave}!`, 3000);
-                        } else {
-                            // بدء النهار
-                            current.dayNightCycle = 'day';
-                            current.timeLeft = 120; // 120 ثانية نهاراً
-                            
-                            // إزالة جميع الزومبي
-                            database.ref('zombies').remove();
-                            
-                            // إنشاء موارد جديدة
-                            spawnResources(5);
-                        }
+                // تقليل الوقت المتبقي
+                gameState.gameData.timeLeft--;
+                
+                // تغيير الليل والنهار
+                if (gameState.gameData.timeLeft <= 0) {
+                    if (gameState.gameData.dayNightCycle === 'day') {
+                        // بدء الليل وموجة زومبي جديدة
+                        gameState.gameData.dayNightCycle = 'night';
+                        gameState.gameData.timeLeft = 60; // 60 ثانية ليلاً
+                        gameState.gameData.wave++;
+                        
+                        // توليد الزومبي
+                        spawnZombies(gameState.gameData.wave * 3);
+                        
+                        // إظهار رسالة
+                        showMessage(`موجة الزومبي #${gameState.gameData.wave}!`, 3000);
+                    } else {
+                        // بدء النهار
+                        gameState.gameData.dayNightCycle = 'day';
+                        gameState.gameData.timeLeft = 120; // 120 ثانية نهاراً
+                        
+                        // إزالة جميع الزومبي
+                        gameState.zombies = [];
+                        elements.zombiesContainer.innerHTML = '';
+                        
+                        // إنشاء موارد جديدة
+                        spawnResources(5);
                     }
                     
-                    return current;
-                });
+                    updateGameUI();
+                }
+                
+                // تحديث واجهة المستخدم كل ثانية
+                updateGameUI();
             }, 1000);
         }
 
@@ -707,9 +633,12 @@
             // تحديث صحة الملجأ
             elements.shelterHealth.textContent = `الملجأ: ${gameState.gameData.shelterHealth}%`;
             
+            // تحديث الموارد
+            elements.resourcesCounter.textContent = `الموارد: ${gameState.resources}`;
+            
             // تحديث زر التحسين
             elements.buildBtn.textContent = `تحسين الملجأ (${10 * gameState.gameData.shelterLevel} موارد)`;
-            elements.buildBtn.disabled = gameState.players[gameState.playerId]?.resources < (10 * gameState.gameData.shelterLevel);
+            elements.buildBtn.disabled = gameState.resources < (10 * gameState.gameData.shelterLevel);
             
             // هزة عند تضرر الملجأ
             if (gameState.gameData.shelterHealth < 30) {
@@ -721,20 +650,17 @@
             
             // نهاية اللعبة
             if (gameState.gameData.shelterHealth <= 0 && !gameState.gameData.gameOver) {
-                gameState.gameRef.update({ gameOver: true });
-                showMessage('انتهت اللعبة! لقد دمر الزومبي الملجأ.', 0);
+                gameState.gameData.gameOver = true;
+                endGame();
             }
         }
 
         // تحديث موقع اللاعب
         function updatePlayerPosition() {
-            if (!gameState.playerRef || !gameState.controls) return;
+            if (!gameState.controls) return;
             
-            const player = gameState.players[gameState.playerId];
-            if (!player) return;
-            
-            let newX = player.position.x || 300;
-            let newY = player.position.y || 300;
+            let newX = gameState.position.x;
+            let newY = gameState.position.y;
             
             if (gameState.controls.up) newY -= gameState.playerSpeed;
             if (gameState.controls.down) newY += gameState.playerSpeed;
@@ -745,62 +671,18 @@
             newX = Math.max(20, Math.min(newX, elements.gameMap.offsetWidth - 20));
             newY = Math.max(20, Math.min(newY, elements.gameMap.offsetHeight - 20));
             
-            // تحديث الموقع في Firebase
-            gameState.playerRef.update({
-                position: { x: newX, y: newY },
-                lastActive: firebase.database.ServerValue.TIMESTAMP
-            });
-        }
-
-        // تحديث اللاعبين على الشاشة
-        function updatePlayersOnScreen() {
-            // في هذه النسخة المبسطة، نعرض فقط اللاعب الحالي
-            const player = gameState.players[gameState.playerId];
-            if (player) {
-                elements.player.style.left = `${player.position.x - 15}px`;
-                elements.player.style.top = `${player.position.y - 15}px`;
-                elements.resourcesCounter.textContent = `الموارد: ${player.resources}`;
-            }
-        }
-
-        // تحديث الزومبي على الشاشة
-        function updateZombiesOnScreen() {
-            elements.zombiesContainer.innerHTML = '';
-            
-            for (const zombieId in gameState.zombies) {
-                const zombie = gameState.zombies[zombieId];
-                const zombieElement = document.createElement('div');
-                zombieElement.className = 'zombie';
-                zombieElement.style.left = `${zombie.position.x - 15}px`;
-                zombieElement.style.top = `${zombie.position.y - 15}px`;
-                zombieElement.id = `zombie-${zombieId}`;
-                elements.zombiesContainer.appendChild(zombieElement);
-            }
-        }
-
-        // تحديث الموارد على الشاشة
-        function updateResourcesOnScreen() {
-            elements.resourcesContainer.innerHTML = '';
-            
-            for (const resourceId in gameState.resources) {
-                const resource = gameState.resources[resourceId];
-                const resourceElement = document.createElement('div');
-                resourceElement.className = 'resource';
-                resourceElement.style.left = `${resource.position.x - 10}px`;
-                resourceElement.style.top = `${resource.position.y - 10}px`;
-                resourceElement.id = `resource-${resourceId}`;
-                elements.resourcesContainer.appendChild(resourceElement);
-            }
+            // تحديث الموقع
+            gameState.position = { x: newX, y: newY };
+            elements.player.style.left = `${newX - 15}px`;
+            elements.player.style.top = `${newY - 15}px`;
         }
 
         // توليد الزومبي
         function spawnZombies(count) {
-            const zombies = {};
             const mapWidth = elements.gameMap.offsetWidth;
             const mapHeight = elements.gameMap.offsetHeight;
             
             for (let i = 0; i < count; i++) {
-                const zombieId = 'zombie_' + Date.now() + '_' + i;
                 let x, y;
                 
                 // وضع الزومبي على حواف الخريطة
@@ -812,51 +694,55 @@
                     y = Math.random() < 0.5 ? 0 : mapHeight;
                 }
                 
-                zombies[zombieId] = {
+                gameState.zombies.push({
+                    id: 'zombie_' + Date.now() + '_' + i,
                     position: { x, y },
-                    target: 'shelter', // أو 'player'
-                    speed: 1 + Math.random() * 1,
+                    speed: 1 + Math.random(),
                     health: 3
-                };
+                });
             }
             
-            database.ref('zombies').update(zombies);
-            
-            // بدء حركة الزومبي
-            moveZombies();
+            updateZombiesOnScreen();
         }
 
         // حركة الزومبي
         function moveZombies() {
             if (gameState.gameData.dayNightCycle !== 'night') return;
             
-            for (const zombieId in gameState.zombies) {
-                const zombie = gameState.zombies[zombieId];
-                const shelterPos = {
-                    x: elements.shelter.offsetLeft + elements.shelter.offsetWidth / 2,
-                    y: elements.shelter.offsetTop + elements.shelter.offsetHeight / 2
-                };
-                
+            const shelterPos = {
+                x: elements.shelter.offsetLeft + elements.shelter.offsetWidth / 2,
+                y: elements.shelter.offsetTop + elements.shelter.offsetHeight / 2
+            };
+            
+            gameState.zombies.forEach(zombie => {
                 // حساب الاتجاه نحو الملجأ
                 const dx = shelterPos.x - zombie.position.x;
                 const dy = shelterPos.y - zombie.position.y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
                 
                 if (distance > 10) {
-                    const speed = zombie.speed || 1;
-                    const newX = zombie.position.x + (dx / distance) * speed;
-                    const newY = zombie.position.y + (dy / distance) * speed;
+                    const newX = zombie.position.x + (dx / distance) * zombie.speed;
+                    const newY = zombie.position.y + (dy / distance) * zombie.speed;
                     
-                    database.ref(`zombies/${zombieId}/position`).set({
-                        x: newX,
-                        y: newY
-                    });
+                    zombie.position = { x: newX, y: newY };
                 }
-            }
+            });
             
-            if (!gameState.gameData.gameOver) {
-                setTimeout(moveZombies, 100);
-            }
+            updateZombiesOnScreen();
+        }
+
+        // تحديث الزومبي على الشاشة
+        function updateZombiesOnScreen() {
+            elements.zombiesContainer.innerHTML = '';
+            
+            gameState.zombies.forEach(zombie => {
+                const zombieElement = document.createElement('div');
+                zombieElement.className = 'zombie';
+                zombieElement.style.left = `${zombie.position.x - 15}px`;
+                zombieElement.style.top = `${zombie.position.y - 15}px`;
+                zombieElement.id = zombie.id;
+                elements.zombiesContainer.appendChild(zombieElement);
+            });
         }
 
         // توليد موارد أولية
@@ -866,22 +752,35 @@
 
         // توليد موارد
         function spawnResources(count) {
-            const resources = {};
             const mapWidth = elements.gameMap.offsetWidth;
             const mapHeight = elements.gameMap.offsetHeight;
             
             for (let i = 0; i < count; i++) {
-                const resourceId = 'resource_' + Date.now() + '_' + i;
-                const x = 50 + Math.random() * (mapWidth - 100);
-                const y = 50 + Math.random() * (mapHeight - 100);
-                
-                resources[resourceId] = {
-                    position: { x, y },
+                gameState.resourcesList.push({
+                    id: 'resource_' + Date.now() + '_' + i,
+                    position: { 
+                        x: 50 + Math.random() * (mapWidth - 100),
+                        y: 50 + Math.random() * (mapHeight - 100)
+                    },
                     value: 1
-                };
+                });
             }
             
-            database.ref('resources').update(resources);
+            updateResourcesOnScreen();
+        }
+
+        // تحديث الموارد على الشاشة
+        function updateResourcesOnScreen() {
+            elements.resourcesContainer.innerHTML = '';
+            
+            gameState.resourcesList.forEach(resource => {
+                const resourceElement = document.createElement('div');
+                resourceElement.className = 'resource';
+                resourceElement.style.left = `${resource.position.x - 10}px`;
+                resourceElement.style.top = `${resource.position.y - 10}px`;
+                resourceElement.id = resource.id;
+                elements.resourcesContainer.appendChild(resourceElement);
+            });
         }
 
         // جمع الموارد
@@ -889,25 +788,21 @@
             if (gameState.isCollecting) return;
             gameState.isCollecting = true;
             
-            const player = gameState.players[gameState.playerId];
-            if (!player) return;
-            
             let collected = false;
             
-            for (const resourceId in gameState.resources) {
-                const resource = gameState.resources[resourceId];
-                const distance = getDistance(player.position, resource.position);
+            for (let i = 0; i < gameState.resourcesList.length; i++) {
+                const resource = gameState.resourcesList[i];
+                const distance = getDistance(gameState.position, resource.position);
                 
                 if (distance < gameState.collectionRange) {
                     // زيادة موارد اللاعب
-                    const newResources = (player.resources || 0) + resource.value;
-                    gameState.playerRef.update({ resources: newResources });
+                    gameState.resources += resource.value;
                     
                     // إزالة المورد
-                    database.ref(`resources/${resourceId}`).remove();
+                    gameState.resourcesList.splice(i, 1);
                     
                     // تأثير مرئي
-                    const resourceElement = document.getElementById(`resource-${resourceId}`);
+                    const resourceElement = document.getElementById(resource.id);
                     if (resourceElement) {
                         resourceElement.style.transform = 'scale(1.5)';
                         resourceElement.style.opacity = '0';
@@ -926,6 +821,7 @@
                 setTimeout(() => {
                     elements.player.style.transform = 'scale(1)';
                 }, 200);
+                updateGameUI();
             } else {
                 showMessage('لا توجد موارد قريبة!', 1000);
             }
@@ -937,33 +833,24 @@
 
         // تحسين الملجأ
         function upgradeShelter() {
-            const player = gameState.players[gameState.playerId];
-            if (!player) return;
-            
             const requiredResources = 10 * gameState.gameData.shelterLevel;
             
-            if (player.resources >= requiredResources) {
+            if (gameState.resources >= requiredResources) {
                 // خصم الموارد
-                const newResources = player.resources - requiredResources;
-                gameState.playerRef.update({ resources: newResources });
+                gameState.resources -= requiredResources;
                 
                 // تحسين الملجأ
-                gameState.gameRef.transaction((current) => {
-                    if (!current) return;
-                    
-                    current.shelterHealth = Math.min(100, current.shelterHealth + 20);
-                    current.shelterLevel++;
-                    
-                    // تأثير مرئي
-                    elements.shelter.style.transform = 'scale(1.1)';
-                    setTimeout(() => {
-                        elements.shelter.style.transform = 'scale(1)';
-                    }, 300);
-                    
-                    showMessage('تم تحسين الملجأ!', 1500);
-                    
-                    return current;
-                });
+                gameState.gameData.shelterHealth = Math.min(100, gameState.gameData.shelterHealth + 20);
+                gameState.gameData.shelterLevel++;
+                
+                // تأثير مرئي
+                elements.shelter.style.transform = 'scale(1.1)';
+                setTimeout(() => {
+                    elements.shelter.style.transform = 'scale(1)';
+                }, 300);
+                
+                showMessage('تم تحسين الملجأ!', 1500);
+                updateGameUI();
             } else {
                 showMessage('موارد غير كافية!', 1000);
             }
@@ -978,24 +865,21 @@
                 y: elements.shelter.offsetTop + elements.shelter.offsetHeight / 2
             };
             
-            for (const zombieId in gameState.zombies) {
-                const zombie = gameState.zombies[zombieId];
+            for (let i = 0; i < gameState.zombies.length; i++) {
+                const zombie = gameState.zombies[i];
                 const distance = getDistance(zombie.position, shelterPos);
                 
                 if (distance < 50) {
                     // الزومبي يهاجم الملجأ
-                    gameState.gameRef.transaction((current) => {
-                        if (!current) return;
-                        
-                        current.shelterHealth = Math.max(0, current.shelterHealth - 1);
-                        
-                        // إزالة الزومبي إذا وصل للملجأ
-                        if (distance < 30) {
-                            database.ref(`zombies/${zombieId}`).remove();
-                        }
-                        
-                        return current;
-                    });
+                    gameState.gameData.shelterHealth = Math.max(0, gameState.gameData.shelterHealth - 1);
+                    
+                    // إزالة الزومبي إذا وصل للملجأ
+                    if (distance < 30) {
+                        gameState.zombies.splice(i, 1);
+                        i--;
+                    }
+                    
+                    updateGameUI();
                 }
             }
         }
@@ -1004,12 +888,9 @@
         function checkResourceCollection() {
             if (!gameState.isCollecting) return;
             
-            const player = gameState.players[gameState.playerId];
-            if (!player) return;
-            
-            for (const resourceId in gameState.resources) {
-                const resource = gameState.resources[resourceId];
-                const distance = getDistance(player.position, resource.position);
+            for (let i = 0; i < gameState.resourcesList.length; i++) {
+                const resource = gameState.resourcesList[i];
+                const distance = getDistance(gameState.position, resource.position);
                 
                 if (distance < gameState.collectionRange) {
                     collectResources();
@@ -1039,6 +920,7 @@
                     break;
             }
         }
+
         function handleKeyUp(e) {
             switch(e.key) {
                 case 'ArrowUp':
@@ -1082,13 +964,11 @@
         // إنهاء اللعبة
         function endGame() {
             gameState.gameData.gameOver = true;
-            gameState.gameRef.update({ gameOver: true });
             
             // حساب النقاط النهائية
-            const playerScore = gameState.players[gameState.playerId]?.resources || 0;
             const survivedWaves = gameState.gameData.wave;
             
-            showMessage(`انتهت اللعبة! نجوت من ${survivedWaves} موجات وجمعت ${playerScore} موارد`, 5000);
+            showMessage(`انتهت اللعبة! نجوت من ${survivedWaves} موجات وجمعت ${gameState.resources} موارد`, 5000);
             
             // إعادة تعيين اللعبة بعد 5 ثوان
             setTimeout(() => {
@@ -1098,78 +978,35 @@
 
         // إعادة تعيين اللعبة
         function resetGame() {
-            // إزالة جميع البيانات من Firebase
-            database.ref('players').remove();
-            database.ref('zombies').remove();
-            database.ref('resources').remove();
-            gameState.gameRef.update({
+            // إعادة تعيين حالة اللعبة
+            gameState.position = { x: 300, y: 300 };
+            gameState.resources = 0;
+            gameState.zombies = [];
+            gameState.resourcesList = [];
+            gameState.gameData = {
                 dayNightCycle: 'day',
                 timeLeft: 120,
                 shelterHealth: 100,
                 shelterLevel: 1,
                 wave: 0,
                 gameOver: false
-            });
+            };
             
-            // إعادة تعيين حالة اللعبة
-            gameState.players = {};
-            gameState.zombies = {};
-            gameState.resources = {};
-            gameState.gameData.gameOver = false;
+            // مسح العناصر من الشاشة
+            elements.zombiesContainer.innerHTML = '';
+            elements.resourcesContainer.innerHTML = '';
             
             // إعادة عرض شاشة الدخول
             elements.loginScreen.classList.remove('hidden');
             elements.playerNameInput.value = gameState.playerName;
-        }
-
-        // تهيئة التحكم للهاتف
-        function setupMobileControls() {
-            // التحكم لأعلى
-            elements.mobileUp.addEventListener('touchstart', () => {
-                gameState.controls.up = true;
-            });
-            elements.mobileUp.addEventListener('touchend', () => {
-                gameState.controls.up = false;
-            });
             
-            // التحكم لأسفل
-            elements.mobileDown.addEventListener('touchstart', () => {
-                gameState.controls.down = true;
-            });
-            elements.mobileDown.addEventListener('touchend', () => {
-                gameState.controls.down = false;
-            });
-            
-            // التحكم لليسار
-            elements.mobileLeft.addEventListener('touchstart', () => {
-                gameState.controls.left = true;
-            });
-            elements.mobileLeft.addEventListener('touchend', () => {
-                gameState.controls.left = false;
-            });
-            
-            // التحكم لليمين
-            elements.mobileRight.addEventListener('touchstart', () => {
-                gameState.controls.right = true;
-            });
-            elements.mobileRight.addEventListener('touchend', () => {
-                gameState.controls.right = false;
-            });
+            // تحديث موقع اللاعب
+            updatePlayerPosition();
         }
 
         // بدء اللعبة عند تحميل الصفحة
         window.addEventListener('DOMContentLoaded', () => {
             setupEventListeners();
-            setupMobileControls();
-            
-            // تهيئة Firebase
-            auth.signInAnonymously()
-                .then(() => {
-                    console.log('تم الاتصال بنجاح');
-                })
-                .catch(error => {
-                    showMessage(`خطأ في الاتصال: ${error.message}`);
-                });
         });
     </script>
 </body>
